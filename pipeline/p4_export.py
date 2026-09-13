@@ -223,7 +223,10 @@ create policy "public read redirects" on redirects for select using (true);
     # Rutas que existen en la aplicacion sin ser un documento del dataset:
     # portada, catalogo, indice de guias, buscador y mapa de URLs.
     RUTAS_APP = {"/", "/shop/", "/guides/", "/search/", "/redirect-map/"}
-    todos = {d["path"] for c in COLL for d in S[c]} | RUTAS_APP
+    documentos = {d["path"] for c in COLL for d in S[c]}
+    # Para comprobar redirecciones rotas si cuentan las rutas de la aplicacion;
+    # para informar del tamano del portal, no: no son contenido.
+    todos = documentos | RUTAS_APP
     rotas = sorted(dest - todos)
 
     qa = []
@@ -232,12 +235,14 @@ create policy "public read redirects" on redirects for select using (true);
     qa.append("## Cifras\n")
     qa.append("| Concepto | Cantidad |\n|---|---|")
     qa.append("| URLs rastreadas en los 3 portales | {} |".format(S["stats"]["crawled"]))
-    qa.append("| URLs finales del portal unico | {} |".format(len(todos)))
+    qa.append("| URLs finales del portal unico | {} |".format(len(documentos)))
     qa.append("| Categorias de producto | {} |".format(len(cats)))
     qa.append("| Fichas de producto | {} |".format(len(prods)))
     qa.append("| Articulos del blog | {} |".format(len(S["posts"])))
     qa.append("| Categorias del blog | {} |".format(len(S["postcats"])))
     qa.append("| Paginas | {} |".format(len(pages)))
+    indexables = [d for c in COLL for d in S[c] if not d.get("noindex") and d.get("sub") != "junk"]
+    qa.append("| De todas ellas, indexables | {} |".format(len(indexables)))
     qa.append("| Redirecciones 301 | {} |".format(len(S["redirects"])))
     qa.append("| URLs antiguas a noindex (etiquetas) | {} |".format(len(S["noindex"])))
     qa.append("| Fichas con contenido reescrito | {} |".format(S["stats"]["rewritten"]))

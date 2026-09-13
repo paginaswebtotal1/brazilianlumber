@@ -7,12 +7,13 @@ Generado por `pipeline/p4_export.py` el 2026-09-13.
 | Concepto | Cantidad |
 |---|---|
 | URLs rastreadas en los 3 portales | 2197 |
-| URLs finales del portal unico | 813 |
+| URLs finales del portal unico | 810 |
 | Categorias de producto | 50 |
 | Fichas de producto | 295 |
 | Articulos del blog | 229 |
 | Categorias del blog | 70 |
 | Paginas | 166 |
+| De todas ellas, indexables | 740 |
 | Redirecciones 301 | 650 |
 | URLs antiguas a noindex (etiquetas) | 722 |
 | Fichas con contenido reescrito | 109 |
