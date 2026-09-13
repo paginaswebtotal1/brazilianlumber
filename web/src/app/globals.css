@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Sistema de diseño del portal unificado.
+   Paleta tomada de la materia prima: maderas tropicales sobre fondo cal.
+   Un solo acento (ámbar) para que el ojo sepa siempre dónde está la acción.
+--------------------------------------------------------------------------- */
+@theme {
+  --color-bark-50: #faf7f2;
+  --color-bark-100: #f2ece2;
+  --color-bark-200: #e3d8c7;
+  --color-bark-300: #cdbb9f;
+  --color-bark-400: #b19773;
+  --color-bark-500: #967a56;
+  --color-bark-600: #7b6245;
+  --color-bark-700: #624e39;
+  --color-bark-800: #3f3327;
+  --color-bark-900: #262019;
+  --color-bark-950: #17130f;
+
+  --color-ember-400: #e0a33c;
+  --color-ember-500: #c9852a;
+  --color-ember-600: #a86a1e;
+
+  --color-moss-500: #4a7c59;
+  --color-moss-600: #3b6547;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, ui-serif, serif;
+
+  --radius-card: 0.75rem;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-bark-50);
+  color: var(--color-bark-900);
+  font-family: var(--font-sans);
+  /* Evita el salto de layout cuando aparece la barra de scroll: cuenta para CLS. */
+  scrollbar-gutter: stable;
+}
+
+/* Reserva de espacio para toda imagen remota: sin esto el CLS se dispara
+   porque las fotos siguen en los portales de origen y llegan tarde. */
+.media {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-bark-100);
+}
+.media > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Portada generada cuando la ficha no tiene fotografía. 285 de las 295 fichas
+   llegaron sin imagen, y una tarjeta vacía se ve peor que una textura honesta. */
+.woodfill {
+  background-image:
+    repeating-linear-gradient(
+      92deg,
+      rgb(255 255 255 / 0.06) 0px,
+      rgb(255 255 255 / 0.06) 2px,
+      transparent 2px,
+      transparent 9px
+    ),
+    repeating-linear-gradient(
+      88deg,
+      rgb(0 0 0 / 0.07) 0px,
+      rgb(0 0 0 / 0.07) 1px,
+      transparent 1px,
+      transparent 23px
+    ),
+    linear-gradient(160deg, rgb(255 255 255 / 0.18), transparent 60%);
+}
+
+/* Texto largo de artículos y fichas. */
+.prose-bl {
+  max-width: 68ch;
+}
+.prose-bl p {
+  margin-block: 1rem;
+  line-height: 1.75;
+  color: var(--color-bark-800);
+}
+.prose-bl h2 {
+  margin-block: 2.25rem 0.75rem;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1.25;
+  font-weight: 600;
+  color: var(--color-bark-900);
+}
+.prose-bl h3 {
+  margin-block: 1.75rem 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 650;
+  color: var(--color-bark-900);
+}
+.prose-bl ul {
+  margin-block: 1rem;
+  padding-inline-start: 1.15rem;
+  list-style: disc;
+}
+.prose-bl li {
+  margin-block: 0.45rem;
+  line-height: 1.7;
+  color: var(--color-bark-800);
+}
+.prose-bl a {
+  color: var(--color-ember-600);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Foco visible en todo elemento interactivo: requisito de accesibilidad. */
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--color-ember-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

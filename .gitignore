@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+.env
+.env.local
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+Thumbs.db
+
+# Datos intermedios del pipeline: se regeneran con p1..p4 y pesan demasiado
+data/raw.json
+data/classified.json
+data/check.json
+data/site.json
+data/supabase-rows.json
