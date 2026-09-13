@@ -12,7 +12,7 @@ import {
   productsIn,
   related,
 } from "@/lib/data";
-import { breadcrumbSchema, collectionSchema, graph, metaFor } from "@/lib/seo";
+import { breadcrumbSchema, collectionSchema, faqSchema, graph, metaFor } from "@/lib/seo";
 
 /**
  * Ruta comodín: resuelve las categorías de producto (rutas jerárquicas de hasta
@@ -119,7 +119,13 @@ export default async function CatchAll({ params }: Params) {
           </Section>
         )}
 
-        <JsonLd data={graph(collectionSchema(doc, direct), breadcrumbSchema(crumbs))} />
+        <JsonLd
+          data={graph(
+            collectionSchema(doc, direct),
+            breadcrumbSchema(crumbs),
+            ...(doc.faq?.length ? [faqSchema(doc.faq)] : []),
+          )}
+        />
       </div>
     );
   }

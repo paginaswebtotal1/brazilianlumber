@@ -220,7 +220,10 @@ create policy "public read redirects" on redirects for select using (true);
     sin_img = [p for p in prods if not p["image"]]
     junk = [p for p in pages if p["sub"] == "junk"]
     dest = {r["to"] for r in S["redirects"]}
-    todos = {d["path"] for c in COLL for d in S[c]}
+    # Rutas que existen en la aplicacion sin ser un documento del dataset:
+    # portada, catalogo, indice de guias, buscador y mapa de URLs.
+    RUTAS_APP = {"/", "/shop/", "/guides/", "/search/", "/redirect-map/"}
+    todos = {d["path"] for c in COLL for d in S[c]} | RUTAS_APP
     rotas = sorted(dest - todos)
 
     qa = []

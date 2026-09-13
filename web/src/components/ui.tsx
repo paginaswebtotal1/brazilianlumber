@@ -49,6 +49,36 @@ export function Blocks({ blocks }: { blocks: Block[] }) {
             </figure>
           );
         }
+        if (b.t === "table") {
+          // Una tabla comparativa es el formato que mejor extraen los motores
+          // generativos, y el que mas rapido lee una persona que esta decidiendo.
+          return (
+            <div key={i} className="my-7 overflow-x-auto rounded-[--radius-card] border border-bark-200 bg-white">
+              <table className="w-full min-w-[420px] text-[14px]">
+                <thead className="border-b border-bark-200 bg-bark-100 text-left">
+                  <tr>
+                    {b.head.map((h) => (
+                      <th key={h} scope="col" className="px-4 py-2.5 font-semibold text-bark-700">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {b.rows.map((r, j) => (
+                    <tr key={j} className="border-b border-bark-100 last:border-0 even:bg-bark-50/60">
+                      {r.map((c, k) => (
+                        <td key={k} className={k === 0 ? "px-4 py-2.5 font-medium text-bark-900" : "px-4 py-2.5 text-bark-700"}>
+                          {c}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
         if (b.t === "list") {
           return (
             <ul key={i}>

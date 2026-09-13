@@ -18,7 +18,8 @@ import site from "@/data/site.json";
 export type Block =
   | { t: "p" | "h2" | "h3" | "h4"; text: string }
   | { t: "list"; items: string[] }
-  | { t: "img"; src: string; w?: number; h?: number };
+  | { t: "img"; src: string; w?: number; h?: number }
+  | { t: "table"; head: string[]; rows: string[][] };
 
 export type Spec = [string, string];
 

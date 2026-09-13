@@ -8,6 +8,8 @@ from pathlib import Path
 from collections import defaultdict, Counter
 from taxonomia import ARBOL, MAP, ESPECIE
 from kb import ESPECIES, MARCAS, MEDIDAS, COLORES
+import contenido
+import contenido_paginas
 
 D = Path(__file__).resolve().parent.parent / "data"
 HOST = "https://brazilianlumber.com"
@@ -34,8 +36,49 @@ def titlecase(s):
     return " ".join(x if (i and x.lower() in minor) else (x[:1].upper() + x[1:]) for i, x in enumerate(w))
 
 
+# Paginas legacy que duplican un nodo de la taxonomia. Tener las dos compitiendo
+# por la misma consulta es canibalizacion: la categoria es la que gana, porque
+# lista producto real. Estas se consolidan y quedan documentadas en el mapa.
+CONSOLIDAR = {
+    "trex-decking": "decking/composite/trex",
+    "timbertech-composite-decking": "decking/composite/timbertech",
+    "deckotech": "decking/composite/deckotech",
+    "deckotech-2": "decking/composite/deckotech",
+    "pvc-decking": "decking/pvc",
+    "composite-decking": "decking/composite",
+    "decking-accessories": "accessories",
+    "tools": "accessories/tools",
+    "thermally-modified-wood": "decking/thermally-modified",
+    "thermally-enhanced-wood": "decking/thermally-modified",
+    "lunawood": "decking/thermally-modified",
+    "cumaru": "decking/tropical-hardwood/cumaru",
+    "garapa": "decking/tropical-hardwood/garapa",
+    "jatoba": "decking/tropical-hardwood/jatoba",
+    "tigerwood": "decking/tropical-hardwood/tigerwood",
+    "piquia": "decking/tropical-hardwood/piquia",
+    "ipe": "decking/tropical-hardwood/ipe",
+    "cladding": "cladding-siding",
+    "siding-and-cladding": "cladding-siding",
+    "wood-wall-panels": "cladding-siding/wood-wall-panels",
+    "decktiles": "decking/deck-tiles",
+    "ipe-deck-tiles": "decking/deck-tiles",
+    "fences-docks": "fencing-gates",
+    "menu-shop": "shop",
+    "new-shop": "shop",
+    "brazilian-lumber-blogs": "guides",
+    "blogs": "guides",
+    "brazilian-lumber-los-angeles-blogs": "guides",
+}
+
 JUNK = {"hometest", "carousel-home", "thank-you-page", "cont-form-example", "test-form-flowsly",
         "home-test-2025", "blog-example", "thank-you-review", "thank-you-ibs", "thank-you", "demo-home"}
+
+# Campanas y formularios de eventos ya pasados. No son basura (existieron y
+# tuvieron trafico), pero un formulario de sorteo de una feria del ano pasado no
+# tiene por que estar en el indice de Google compitiendo con el catalogo.
+CADUCADAS = {"ibs", "ibs-show-giveaway-form", "thank-you-ibs", "black-friday-2025-terms-conditions",
+             "black-friday-terms-and-conditions", "covid-19-update", "trend-guide",
+             "download-trend-guide", "thank-you-review", "download-or-digital-brochure"}
 
 UTIL = {"cart", "my-cart", "checkout", "my-account", "register", "privacy-policy", "terms-conditions",
         "terms-and-conditions", "sitemap", "free-shipping-terms", "black-friday-2025-terms-conditions",
@@ -201,6 +244,20 @@ def gen_producto(d):
     faq.append(("Can I get this cut to length?",
                 "Yes. We mill to order in house and can ship cut stock, which cuts jobsite waste and freight cost "
                 "on long runs."))
+    # Fichas sin especie ni marca reconocida (cesped artificial, hiedra, losetas)
+    # se quedaban cortas. Se les añade la guia de su familia, que es informacion
+    # util de verdad y no relleno.
+    if not esp and not mrc:
+        import contenido as _c
+        fam = _c.FAMILIA.get((d.get("cat") or "accessories").split("/")[0])
+        if fam:
+            bl.append({"t": "h2", "text": "What to look at before you order"})
+            bl.append({"t": "list", "items": ["{}. {}".format(t, x) for t, x in fam["elegir"]]})
+            bl.append({"t": "h2", "text": "Installation"})
+            bl.append({"t": "p", "text": fam["instalacion"]})
+            for q, a in fam["faq"]:
+                faq.append((q, a))
+
     bl.append({"t": "h2", "text": "Frequently asked questions"})
     d["faq"] = [{"q": q, "a": aa} for q, aa in faq[:4]]
     for q, aa in faq[:4]:
@@ -345,11 +402,14 @@ def main():
         for r in desc_rutas:
             todos += [p for p in by_type["product"]
                       if r in (p.get("cats_extra") or []) and p not in todos]
+        _bl, _faq = contenido.gen_categoria(ruta, titulo, hijos, todos,
+                                            ARBOL[padre][0] if padre else None)
         cats.append({
+            "faq": _faq,
             "kind": "category", "path": "/" + ruta + "/", "slug": ruta.rsplit("/", 1)[-1],
             "route": ruta, "parent": ("/" + padre + "/") if padre else None,
             "title": titulo, "h1": titulo,
-            "blocks": gen_categoria(ruta, titulo, hijos, todos),
+            "blocks": _bl,
             "children": ["/" + h[0] + "/" for h in hijos],
             "productCount": len(todos), "directCount": len(prods_por_cat.get(ruta, [])),
             "description": "{}: {} products in stock at Brazilian Lumber. Specs, sizes and pricing from our "
@@ -428,6 +488,9 @@ def main():
             "date": d["fecha"] or d["modificado"], "modified": d["modificado"],
             "words": d["palabras"], "clicks": d["clics"], "impressions": d["impresiones"],
             "origins": [d["url_origen"]], "color": "#5a4632",
+            # Un articulo de 35 palabras no es un articulo. Sigue publicado para
+            # no perder la URL, pero no entra en el indice ni en el sitemap.
+            "noindex": (d["palabras"] or 0) < 120,
         })
 
     postcats = []
@@ -436,13 +499,13 @@ def main():
         mine = [x for x in posts if p in x["cats"]]
         postcats.append({
             "kind": "postcat", "path": p, "slug": d["slug"], "title": d["titulo"], "h1": d["titulo"],
-            "blocks": [{"t": "p", "text": "Every guide we have published on {}. {} article{} written by the "
-                                          "Brazilian Lumber team from what we see in the yard and on "
-                                          "jobsites.".format(d["titulo"].lower(), len(mine),
-                                                             "s" if len(mine) != 1 else "")}],
+            "blocks": contenido.gen_postcat(d["titulo"], mine),
             "description": "Guides and technical articles on {} from the Brazilian Lumber "
                            "team.".format(d["titulo"].lower()),
             "postCount": len(mine), "origins": [d["url_origen"]],
+            # Un tema con uno o dos articulos es contenido pobre y canibaliza a
+            # esos mismos articulos. Sigue navegable, pero fuera del indice.
+            "noindex": len(mine) < 3,
             "modified": d["modificado"], "color": "#5a4632",
         })
 
@@ -473,10 +536,18 @@ def main():
                 "{} from Brazilian Lumber, supplier of tropical hardwood decking and composite "
                 "decking since 2006.".format(title),
             ])
+        if sub == "location":
+            bloques = contenido_paginas.gen_ubicacion(
+                title, [ESPECIES[e][0] for e in ("ipe", "cumaru", "garapa") if e in ESPECIES])
+            bloques = gen_pagina(d) + bloques if d["blocks"] else bloques
+        elif sub in ("junk", "utility"):
+            bloques = gen_pagina(d)
+        else:
+            bloques = contenido_paginas.gen_pagina(slug, sub, gen_pagina(d) if d["blocks"] else [])
         pages.append({
             "kind": "page", "sub": sub, "path": path_of(d["url_destino"]), "slug": slug,
             "title": title, "h1": title,
-            "blocks": intercalar(gen_pagina(d), d.get("cuerpo", [])[:5]),
+            "blocks": intercalar(bloques, d.get("cuerpo", [])[:5]),
             "description": (desc or "{} - Brazilian Lumber.".format(title)),
             "image": (d.get("foto") or {}).get("src"),
             "imageW": (d.get("foto") or {}).get("w"),
@@ -485,7 +556,7 @@ def main():
             "gallery": d.get("galeria", [])[:6],
             "words": d["palabras"], "clicks": d["clics"], "impressions": d["impresiones"],
             "modified": d["modificado"], "origins": [d["url_origen"]],
-            "noindex": sub in ("junk", "utility"), "color": "#4c5a66",
+            "noindex": sub in ("junk", "utility") or slug in CADUCADAS, "color": "#4c5a66",
         })
 
     # ---- portada de las categorias y de los temas del blog
@@ -556,6 +627,15 @@ def main():
     absorbed = []
     keep = []
     for pg in pages:
+        destino = CONSOLIDAR.get(pg["slug"])
+        if destino:
+            # Duplica una categoria o una seccion: se consolida y se documenta.
+            absorbed.append({"path": pg["path"], "from": pg["origins"],
+                             "into": "/" + destino + "/"})
+            c = cat_by_path.get("/" + destino + "/")
+            if c and not c["image"] and pg["image"]:
+                c["image"] = pg["image"]
+            continue
         c = cat_by_path.get(pg["path"])
         if c is None:
             keep.append(pg)
@@ -571,6 +651,29 @@ def main():
     redirects = [{"from": r["url_origen"], "to": path_of(r["url_destino"]),
                   "portal": r["portal"], "type": r["tipo"]}
                  for r in raw if r["accion"] == "CONSOLIDAR-301" and r["url_destino"]]
+
+    # Encadenado de redirecciones. Si una pagina se ha consolidado dentro de una
+    # categoria, todo lo que apuntaba a ella tiene que apuntar ahora al destino
+    # final. Una redireccion a una URL que ya no existe es un 301 hacia un 404,
+    # que es peor que no redirigir: el control de calidad del estudio ya detecto
+    # 234 casos asi en Los Angeles y New Jersey.
+    salto = {a["path"]: a["into"] for a in absorbed if a["path"] != a["into"]}
+    for r in redirects:
+        visto = set()
+        while r["to"] in salto and r["to"] not in visto:
+            visto.add(r["to"])
+            r["to"] = salto[r["to"]]
+
+    # Las propias paginas consolidadas entran en el mapa: su URL antigua tiene
+    # que llevar a la categoria que se quedo con el contenido.
+    existentes = {r["from"].rstrip("/") for r in redirects}
+    for a in absorbed:
+        if a["path"] == a["into"]:
+            continue
+        for origen in a["from"]:
+            if origen.rstrip("/") not in existentes:
+                redirects.append({"from": origen, "to": a["into"],
+                                  "portal": "MIA", "type": "pages"})
     noindex = [{"url": r["url_origen"], "type": r["tipo"], "reason": r["motivo"]}
                for r in raw if r["accion"] == "NOINDEX"]
 
