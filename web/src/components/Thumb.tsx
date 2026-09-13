@@ -1,21 +1,27 @@
 import Image from "next/image";
 
 /**
- * Portada de una tarjeta.
+ * Imagen de una tarjeta o de una cabecera.
  *
- * 285 de las 295 fichas llegaron de los 3 portales sin ninguna fotografía. En
- * vez de dejar el hueco gris, se genera una portada a partir del color real de
- * la especie y de las iniciales del producto. Se ve intencionado, pesa cero
- * bytes y no inventa una foto que no existe.
+ * Las fotos son las reales de los tres portales, descargadas y recomprimidas a
+ * WebP por el pipeline (724 ficheros, 34 KB de media). Se sirven desde el propio
+ * portal, no enlazadas: Cloudflare bloquea las peticiones que no vienen de un
+ * navegador y su protección de hotlinking podría activarse en cualquier momento.
+ *
+ * Las pocas fichas que siguen sin foto reciben una portada generada con el color
+ * real de la especie. No inventa una fotografía que no existe, y evita el hueco
+ * gris que hace que un catálogo parezca roto.
  */
 export default function Thumb({
   src,
   alt,
-  color = "#6b4f3a",
+  color = "#5d5344",
   ratio = "4 / 3",
   priority = false,
-  sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 320px",
+  sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 340px",
   label,
+  className = "",
+  scrim = false,
 }: {
   src?: string | null;
   alt: string;
@@ -24,10 +30,14 @@ export default function Thumb({
   priority?: boolean;
   sizes?: string;
   label?: string;
+  className?: string;
+  scrim?: boolean;
 }) {
+  const base = `media ${scrim ? "scrim" : ""} ${className}`;
+
   if (src) {
     return (
-      <div className="media rounded-[--radius-card]" style={{ aspectRatio: ratio }}>
+      <div className={base} style={{ aspectRatio: ratio }}>
         <Image
           src={src}
           alt={alt}
@@ -35,14 +45,12 @@ export default function Thumb({
           sizes={sizes}
           priority={priority}
           loading={priority ? undefined : "lazy"}
-          className="transition-transform duration-500 group-hover:scale-[1.04]"
-          // Las fotos viven todavía en los portales de origen: si una falla,
-          // la tarjeta no puede romperse.
-          unoptimized={false}
+          quality={82}
         />
       </div>
     );
   }
+
   // Solo cuentan las palabras que empiezan por letra: si no, "Ipe 5/4x6" daría
   // "I5", que se lee como un error y no como una inicial.
   const words = (label ?? alt).split(/[\s/-]+/).filter((w) => /^[a-z]/i.test(w));
@@ -50,15 +58,14 @@ export default function Thumb({
     words.length >= 2
       ? (words[0]![0]! + words[1]![0]!).toUpperCase()
       : (words[0] ?? alt).slice(0, 2).toUpperCase();
+
   return (
     <div
-      className="woodfill media rounded-[--radius-card] grid place-items-center"
+      className={`woodfill ${base} grid place-items-center`}
       style={{ aspectRatio: ratio, background: color }}
       aria-hidden="true"
     >
-      <span className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-wide text-white/85 drop-shadow-sm">
-        {initials}
-      </span>
+      <span className="display text-[2.6rem] leading-none text-white/80">{initials}</span>
     </div>
   );
 }

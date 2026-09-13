@@ -94,7 +94,7 @@ export default async function GuidePage({ params }: Params) {
 
         {doc.image && (
           <div className="mt-6">
-            <Thumb src={doc.image} alt={doc.title} color={doc.color} ratio="16 / 9" priority sizes="100vw" />
+            <Thumb src={doc.image} alt={doc.imageAlt ?? doc.title} color={doc.color} ratio="16 / 9" priority sizes="100vw" />
           </div>
         )}
 

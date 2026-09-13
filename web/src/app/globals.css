@@ -2,33 +2,45 @@
 
 /* ---------------------------------------------------------------------------
    Sistema de diseño del portal unificado.
-   Paleta tomada de la materia prima: maderas tropicales sobre fondo cal.
-   Un solo acento (ámbar) para que el ojo sepa siempre dónde está la acción.
+
+   Referencia: una madera noble sobre papel. Fondo cálido de papel, tinta muy
+   oscura, un solo acento ámbar para la acción, y la fotografía como
+   protagonista. Nada de degradados decorativos ni sombras de colores: el
+   producto es bonito por sí solo y la interfaz tiene que quitarse de en medio.
 --------------------------------------------------------------------------- */
 @theme {
-  --color-bark-50: #faf7f2;
-  --color-bark-100: #f2ece2;
-  --color-bark-200: #e3d8c7;
-  --color-bark-300: #cdbb9f;
-  --color-bark-400: #b19773;
-  --color-bark-500: #967a56;
-  --color-bark-600: #7b6245;
-  --color-bark-700: #624e39;
-  --color-bark-800: #3f3327;
-  --color-bark-900: #262019;
-  --color-bark-950: #17130f;
+  /* tinta */
+  --color-bark-50: #fbf9f6;
+  --color-bark-100: #f4f0ea;
+  --color-bark-200: #e6ded2;
+  --color-bark-300: #d2c5b2;
+  --color-bark-400: #a3937f;
+  --color-bark-500: #7d6f5d;
+  --color-bark-600: #5d5344;
+  --color-bark-700: #433c31;
+  --color-bark-800: #2b2620;
+  --color-bark-900: #1a1713;
+  --color-bark-950: #0e0c0a;
 
+  /* acento */
+  --color-ember-300: #f0c179;
   --color-ember-400: #e0a33c;
   --color-ember-500: #c9852a;
-  --color-ember-600: #a86a1e;
+  --color-ember-600: #a2661c;
 
   --color-moss-500: #4a7c59;
-  --color-moss-600: #3b6547;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, ui-serif, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, ui-serif, serif;
 
-  --radius-card: 0.75rem;
+  --radius-card: 14px;
+  --radius-lg: 20px;
+
+  /* Sombras muy bajas y cálidas. Una sombra gris sobre fondo crema se ve sucia. */
+  --shadow-soft: 0 1px 2px rgb(26 23 19 / 0.04), 0 4px 16px -6px rgb(26 23 19 / 0.10);
+  --shadow-lift: 0 2px 4px rgb(26 23 19 / 0.05), 0 18px 40px -14px rgb(26 23 19 / 0.22);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html {
@@ -40,16 +52,28 @@ body {
   background: var(--color-bark-50);
   color: var(--color-bark-900);
   font-family: var(--font-sans);
-  /* Evita el salto de layout cuando aparece la barra de scroll: cuenta para CLS. */
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
   scrollbar-gutter: stable;
 }
 
-/* Reserva de espacio para toda imagen remota: sin esto el CLS se dispara
-   porque las fotos siguen en los portales de origen y llegan tarde. */
+/* Los títulos de display piden un poco menos de aire entre letras al crecer. */
+.display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+/* --------------------------------------------------------------- multimedia */
+
+/* Toda imagen reserva su espacio antes de cargar: es lo que mantiene el CLS en
+   cero cuando hay 24 tarjetas con foto en la misma pantalla. */
 .media {
   position: relative;
   overflow: hidden;
   background: var(--color-bark-100);
+  isolation: isolate;
 }
 .media > img {
   position: absolute;
@@ -57,75 +81,138 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.7s var(--ease-out);
+}
+.group:hover .media > img {
+  transform: scale(1.05);
 }
 
-/* Portada generada cuando la ficha no tiene fotografía. 285 de las 295 fichas
-   llegaron sin imagen, y una tarjeta vacía se ve peor que una textura honesta. */
+/* Veladura inferior para que el texto sobre foto se lea siempre, sea cual sea
+   la foto. Sin esto hay fichas con fondo blanco donde el título desaparece. */
+.scrim::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 60%;
+  background: linear-gradient(to top, rgb(14 12 10 / 0.78), rgb(14 12 10 / 0.25) 45%, transparent);
+  pointer-events: none;
+}
+
+/* Portada generada para las fichas que siguen sin fotografía. */
 .woodfill {
   background-image:
-    repeating-linear-gradient(
-      92deg,
-      rgb(255 255 255 / 0.06) 0px,
-      rgb(255 255 255 / 0.06) 2px,
-      transparent 2px,
-      transparent 9px
-    ),
-    repeating-linear-gradient(
-      88deg,
-      rgb(0 0 0 / 0.07) 0px,
-      rgb(0 0 0 / 0.07) 1px,
-      transparent 1px,
-      transparent 23px
-    ),
-    linear-gradient(160deg, rgb(255 255 255 / 0.18), transparent 60%);
+    repeating-linear-gradient(93deg, rgb(255 255 255 / 0.05) 0 2px, transparent 2px 11px),
+    repeating-linear-gradient(87deg, rgb(0 0 0 / 0.06) 0 1px, transparent 1px 26px),
+    radial-gradient(120% 90% at 25% 10%, rgb(255 255 255 / 0.20), transparent 65%);
 }
 
-/* Texto largo de artículos y fichas. */
+/* --------------------------------------------------------------- tarjetas */
+
+.card {
+  background: #fff;
+  border: 1px solid var(--color-bark-200);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+  transition:
+    transform 0.35s var(--ease-out),
+    box-shadow 0.35s var(--ease-out),
+    border-color 0.35s var(--ease-out);
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lift);
+  border-color: var(--color-bark-300);
+}
+
+/* --------------------------------------------------------------- texto largo */
+
 .prose-bl {
-  max-width: 68ch;
+  max-width: 70ch;
+  font-size: 1.0625rem;
 }
 .prose-bl p {
-  margin-block: 1rem;
+  margin-block: 1.15rem;
   line-height: 1.75;
+  color: var(--color-bark-700);
+}
+.prose-bl > p:first-child {
+  font-size: 1.1875rem;
+  line-height: 1.65;
   color: var(--color-bark-800);
 }
 .prose-bl h2 {
-  margin-block: 2.25rem 0.75rem;
+  margin-block: 2.5rem 0.85rem;
   font-family: var(--font-display);
-  font-size: 1.6rem;
-  line-height: 1.25;
+  font-size: 1.65rem;
   font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
   color: var(--color-bark-900);
 }
 .prose-bl h3 {
-  margin-block: 1.75rem 0.5rem;
-  font-size: 1.15rem;
+  margin-block: 1.9rem 0.5rem;
+  font-size: 1.1rem;
   font-weight: 650;
   color: var(--color-bark-900);
 }
 .prose-bl ul {
-  margin-block: 1rem;
-  padding-inline-start: 1.15rem;
-  list-style: disc;
+  margin-block: 1.15rem;
+  padding-inline-start: 0;
+  list-style: none;
 }
 .prose-bl li {
-  margin-block: 0.45rem;
+  position: relative;
+  margin-block: 0.65rem;
+  padding-inline-start: 1.4rem;
   line-height: 1.7;
-  color: var(--color-bark-800);
+  color: var(--color-bark-700);
+}
+/* Viñeta propia: un punto ámbar pequeño lee mejor que el disco por defecto. */
+.prose-bl li::before {
+  content: "";
+  position: absolute;
+  left: 0.25rem;
+  top: 0.7em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-ember-500);
 }
 .prose-bl a {
   color: var(--color-ember-600);
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
 }
 
-/* Foco visible en todo elemento interactivo: requisito de accesibilidad. */
+/* --------------------------------------------------------------- entrada */
+
+/* Aparición suave al cargar. Escalonada con un delay por índice desde el JSX.
+   Es CSS puro: no añade ni un kilobyte de JavaScript. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.6s var(--ease-out) both;
+}
+
+/* --------------------------------------------------------------- foco */
+
 :where(a, button, input, select, textarea, summary):focus-visible {
   outline: 2px solid var(--color-ember-500);
-  outline-offset: 2px;
-  border-radius: 4px;
+  outline-offset: 3px;
+  border-radius: 6px;
 }
 
+/* Se respeta a quien pide menos movimiento: es accesibilidad, no un extra. */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -134,6 +221,13 @@ body {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  .card:hover {
+    transform: none;
+  }
+  .group:hover .media > img {
+    transform: none;
   }
 }

@@ -45,7 +45,7 @@ export default async function ProductPage({ params }: Params) {
         <div>
           <Thumb
             src={doc.image}
-            alt={doc.title}
+            alt={doc.imageAlt ?? doc.title}
             color={doc.color}
             ratio="1 / 1"
             priority

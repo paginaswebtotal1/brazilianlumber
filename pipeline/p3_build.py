@@ -271,6 +271,58 @@ def main():
     docs = json.load(open(D / "classified.json", encoding="utf-8"))
     raw = json.load(open(D / "raw.json", encoding="utf-8"))
 
+    # Fotografias reales, descargadas y optimizadas por p6/p7. Se sirven desde
+    # el propio portal: Cloudflare bloquea el hotlinking desde otro dominio.
+    try:
+        im = json.load(open(D / "imgmap.json", encoding="utf-8"))
+        REL, IMGS = im["rel"], im["img"]
+    except FileNotFoundError:
+        REL, IMGS = {}, {}
+    try:
+        BODY = json.load(open(D / "bodyimg.json", encoding="utf-8"))
+    except FileNotFoundError:
+        BODY = {}
+    try:
+        DIMS = json.load(open(D / "imgdims.json", encoding="utf-8"))
+    except FileNotFoundError:
+        DIMS = {}
+
+    def dim(src):
+        d = DIMS.get(src.rsplit("/", 1)[-1].replace(".webp", ""))
+        return {"w": d[0], "h": d[1]} if d else {}
+
+    def intercalar(bloques, fotos):
+        """Reparte las fotos del cuerpo entre los parrafos, como estaban en el
+        original. Un articulo de 1.500 palabras sin una sola imagen se lee como
+        un muro de texto, por muy bueno que sea el contenido."""
+        if not fotos:
+            return bloques
+        out, usadas, desde = [], 0, 0
+        for i, b in enumerate(bloques):
+            out.append(b)
+            # Despues del segundo parrafo, y luego cada cuatro bloques.
+            if usadas < len(fotos) and i >= 1 and (i - desde) >= (2 if usadas == 0 else 4)                     and b["t"] in ("p", "list"):
+                f = fotos[usadas]
+                out.append({"t": "img", "src": f["src"], **dim(f["src"])})
+                usadas += 1
+                desde = i
+        return out
+
+    def foto(d):
+        mid = REL.get("{}|{}|{}".format(d["portal"], d["tipo"], d["wp_id"]))
+        if mid is None:
+            return None
+        return IMGS.get("{}|{}".format(d["portal"], mid))
+
+    for d in docs:
+        f = foto(d)
+        d["foto"] = f
+        # La foto destacada manda; las del cuerpo quedan como galeria.
+        cuerpo = [BODY[u] for u in d["imagenes"] if u in BODY]
+        vistos = {f["src"]} if f else set()
+        d["cuerpo"] = [c for c in cuerpo if not (c["src"] in vistos or vistos.add(c["src"]))]
+        d["galeria"] = ([f["src"]] if f else []) + [c["src"] for c in d["cuerpo"]]
+
     hc = Counter(d["hash"] for d in docs if d["hash"])
     for d in docs:
         d["dup"] = bool(d["hash"]) and hc[d["hash"]] > 1
@@ -299,7 +351,10 @@ def main():
             "productCount": len(todos), "directCount": len(prods_por_cat.get(ruta, [])),
             "description": "{}: {} products in stock at Brazilian Lumber. Specs, sizes and pricing from our "
                            "Miami, Los Angeles and New Jersey yards.".format(titulo, len(todos)),
-            "image": (src["imagenes"][0] if src and src["imagenes"] else None),
+            # Solo vale una imagen ya descargada al propio portal. Las URLs
+            # antiguas de los 3 dominios no resuelven desde aqui (Cloudflare),
+            # asi que dejarlas puestas es garantizar una tarjeta rota.
+            "image": next((BODY[u]["src"] for u in (src["imagenes"] if src else []) if u in BODY), None),
             "color": COLORES.get(ruta.rsplit("/", 1)[-1]) or COLORES.get(ruta.split("/")[0], "#6b4f3a"),
             "origins": [src["url_origen"]] if src else [],
             "modified": src["modificado"] if src else "2026-09-13",
@@ -332,8 +387,11 @@ def main():
             "attrs": a, "specs": specs_producto(a),
             "blocks": blocks_gen, "faq": d.get("faq", []),
             "description": desc[:280],
-            "image": d["imagenes"][0] if d["imagenes"] else None,
-            "gallery": d["imagenes"][:6],
+            "image": (d.get("foto") or {}).get("src"),
+            "imageW": (d.get("foto") or {}).get("w"),
+            "imageH": (d.get("foto") or {}).get("h"),
+            "imageAlt": (d.get("foto") or {}).get("alt") or d["titulo"],
+            "gallery": d.get("galeria", [])[:6],
             "color": COLORES.get(a.get("especie") or "", COLORES.get(d["cat"].split("/")[0], "#6b4f3a")),
             "clicks": d["clics"], "impressions": d["impresiones"],
             "modified": d["modificado"], "origins": [d["url_origen"]],
@@ -351,10 +409,14 @@ def main():
         posts.append({
             "kind": "post", "path": path_of(d["url_destino"]), "slug": d["slug"],
             "title": d["titulo"], "h1": d["titulo"],
-            "blocks": d["blocks"] or [{"t": "p", "text": d["texto"][:2000]}],
+            "blocks": intercalar(d["blocks"] or [{"t": "p", "text": d["texto"][:2000]}],
+                                 d.get("cuerpo", [])[:6]),
             "description": (desc or d["titulo"]),
-            "image": d["imagenes"][0] if d["imagenes"] else None,
-            "gallery": d["imagenes"][:6],
+            "image": (d.get("foto") or {}).get("src"),
+            "imageW": (d.get("foto") or {}).get("w"),
+            "imageH": (d.get("foto") or {}).get("h"),
+            "imageAlt": (d.get("foto") or {}).get("alt") or d["titulo"],
+            "gallery": d.get("galeria", [])[:6],
             "cats": [path_of(c["url_destino"]) for c in cs],
             "catNames": [c["titulo"] for c in cs],
             "date": d["fecha"] or d["modificado"], "modified": d["modificado"],
@@ -408,14 +470,79 @@ def main():
         pages.append({
             "kind": "page", "sub": sub, "path": path_of(d["url_destino"]), "slug": slug,
             "title": title, "h1": title,
-            "blocks": gen_pagina(d),
+            "blocks": intercalar(gen_pagina(d), d.get("cuerpo", [])[:5]),
             "description": (desc or "{} - Brazilian Lumber.".format(title)),
-            "image": d["imagenes"][0] if d["imagenes"] else None,
-            "gallery": d["imagenes"][:6],
+            "image": (d.get("foto") or {}).get("src"),
+            "imageW": (d.get("foto") or {}).get("w"),
+            "imageH": (d.get("foto") or {}).get("h"),
+            "imageAlt": (d.get("foto") or {}).get("alt") or title,
+            "gallery": d.get("galeria", [])[:6],
             "words": d["palabras"], "clicks": d["clics"], "impressions": d["impresiones"],
             "modified": d["modificado"], "origins": [d["url_origen"]],
             "noindex": sub in ("junk", "utility"), "color": "#4c5a66",
         })
+
+    # ---- portada de las categorias y de los temas del blog
+    #
+    # WordPress no guarda imagen para estas taxonomias, asi que hay que elegirla.
+    # Y no vale cualquiera: un recorte de tablon sobre fondo blanco, estirado a
+    # sangre en una tarjeta, se ve como un error. Se prefiere una foto de
+    # ambiente, medida por p9 (poco blanco y con color), y solo si no hay
+    # ninguna se cae al recorte de producto.
+    try:
+        ST = json.load(open(D / "imgstats.json", encoding="utf-8"))
+    except FileNotFoundError:
+        ST = {}
+
+    def ambiente(src):
+        v = ST.get((src or "").rsplit("/", 1)[-1].replace(".webp", ""))
+        if not v:
+            return 0.0
+        # Puntua: penaliza el blanco, premia el color y el formato apaisado.
+        horizontal = 1.0 if v["w"] >= v["h"] else 0.55
+        return (1 - v["white"]) * min(v["sat"] / 30, 1.4) * horizontal
+
+    def portada(candidatas, titulo):
+        """candidatas: lista de (src, clics)."""
+        vistas, pool = set(), []
+        for src, clics in candidatas:
+            if src and src not in vistas:
+                vistas.add(src)
+                pool.append((src, clics))
+        if not pool:
+            return None
+        mejor = max(pool, key=lambda x: (ambiente(x[0]), x[1]))
+        return mejor[0] if ambiente(mejor[0]) > 0.30 else pool[0][0]
+
+    # Palabra clave de cada rama, para poder tirar tambien de las fotos de los
+    # articulos: los reportajes de Ipe o de Cumaru tienen las mejores imagenes.
+    for c in cats:
+        clave = c["route"].rsplit("/", 1)[-1].replace("-", " ").lower()
+        dentro = [p for p in products
+                  if p["category"] == c["path"] or p["category"].startswith(c["path"])]
+        cand = [(p["image"], p["clicks"] or 0) for p in dentro if p["image"]]
+        cand += [(g, (p["clicks"] or 0) * 0.5) for p in dentro for g in p.get("gallery", [])[:3]]
+        # fotos de articulos que hablan de esta rama
+        for po in posts:
+            if clave and clave in po["title"].lower():
+                if po["image"]:
+                    cand.append((po["image"], (po["clicks"] or 0) + 5))
+                for b in po["blocks"]:
+                    if b["t"] == "img":
+                        cand.append((b["src"], (po["clicks"] or 0) + 3))
+        elegida = portada(cand, c["title"])
+        if elegida:
+            c["image"] = elegida
+            c["imageAlt"] = c["title"]
+
+    for pc in postcats:
+        dentro = [p for p in posts if pc["path"] in p["cats"]]
+        cand = [(p["image"], p["clicks"] or 0) for p in dentro if p["image"]]
+        cand += [(b["src"], (p["clicks"] or 0) * 0.5) for p in dentro for b in p["blocks"] if b["t"] == "img"]
+        elegida = portada(cand, pc["title"])
+        if elegida:
+            pc["image"] = elegida
+            pc["imageAlt"] = pc["title"]
 
     # Colisiones: una pagina legacy que ocupa la misma URL que un nodo de la taxonomia.
     # La categoria es la duena de la URL, asi que la pagina se absorbe dentro de ella.

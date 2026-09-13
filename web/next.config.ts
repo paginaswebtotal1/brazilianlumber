@@ -8,7 +8,14 @@ const config: NextConfig = {
   poweredByHeader: false,
   compress: true,
   images: {
-    // Las fotos siguen alojadas en los 3 portales de origen mientras dure el prototipo.
+    // IMPORTANTE: con trailingSlash activado, Next redirige /_next/image a
+    // /_next/image/ con un 308 y el optimizador deja de responder, asi que NO
+    // se renderiza ni una sola imagen. Como el pipeline ya entrega las 724
+    // fotos en WebP a 1000 px y 34 KB de media, no hay nada que optimizar en
+    // tiempo de ejecucion: se sirven tal cual, desde el propio dominio.
+    // Ventaja anadida: cero transformaciones de imagen facturables en Vercel.
+    unoptimized: true,
+    // Se conservan por si algun contenido vuelve a enlazar a los portales viejos.
     remotePatterns: [
       { protocol: "https", hostname: "brazilianlumber.com" },
       { protocol: "https", hostname: "www.brazilianlumber.com" },

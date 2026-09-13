@@ -1,10 +1,29 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { JsonLd } from "@/components/ui";
 import { nav, stats } from "@/lib/data";
 import { BRAND, ROBOTS, SITE_URL, graph, orgSchema } from "@/lib/seo";
+
+/**
+ * Las fuentes se autoalojan en el build (next/font). No hay petición a Google
+ * en tiempo de ejecución: evita el bloqueo de render, el aviso de privacidad y
+ * el salto de texto (FOUT), que cuenta como CLS.
+ */
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-fraunces",
+  axes: ["SOFT", "WONK", "opsz"],
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -27,14 +46,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-US">
-      <head>
-        {/* Las fotos siguen alojadas en los portales de origen: abrir la conexión
-            antes de que el navegador descubra la primera imagen ahorra ~200 ms de LCP. */}
-        <link rel="preconnect" href="https://brazilianlumber.com" />
-        <link rel="dns-prefetch" href="https://brazilianlumberlosangeles.com" />
-        <link rel="dns-prefetch" href="https://brazilianlumbernewyork.com" />
-      </head>
+    <html lang="en-US" className={`${inter.variable} ${fraunces.variable}`}>
       <body className="flex min-h-screen flex-col antialiased">
         <a
           href="#main"

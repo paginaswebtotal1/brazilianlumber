@@ -14,3 +14,8 @@ data/classified.json
 data/check.json
 data/site.json
 data/supabase-rows.json
+data/images.json
+data/bodyimg.json
+data/imgmap.json
+data/imgdims.json
+data/imgstats.json

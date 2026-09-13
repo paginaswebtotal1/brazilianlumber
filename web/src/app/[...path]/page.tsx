@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Blocks, Breadcrumbs, CategoryCard, JsonLd, ProductCard, Section } from "@/components/ui";
+import { Blocks, Breadcrumbs, CategoryRow, JsonLd, ProductCard, Section } from "@/components/ui";
 import Thumb from "@/components/Thumb";
 import {
   breadcrumbs,
@@ -81,7 +81,7 @@ export default async function CatchAll({ params }: Params) {
           <Section title="Subcategories">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {kids.map((c) => (
-                <CategoryCard key={c.path} doc={c} />
+                <CategoryRow key={c.path} doc={c} />
               ))}
             </div>
           </Section>
@@ -113,7 +113,7 @@ export default async function CatchAll({ params }: Params) {
           <Section title="Related categories">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {siblings.map((c) => (
-                <CategoryCard key={c.path} doc={c} />
+                <CategoryRow key={c.path} doc={c} />
               ))}
             </div>
           </Section>
