@@ -20,7 +20,11 @@ from openpyxl.utils import get_column_letter
 
 ROOT = Path(__file__).resolve().parent.parent
 D = ROOT / "data"
-SALIDA = ROOT / "MAPA COMPLETO DE LA UNIFICACION.xlsx"
+# El entregable vive con el resto del estudio, no en la carpeta del codigo:
+# es lo que se abre para responderle a direccion.
+PROYECTO = Path("C:/Users/USER/Desktop/BRAZILIAN LUMBER/ARQUITECTURA WEB BL/MENÙ VISUAL")
+SALIDA = (PROYECTO if PROYECTO.exists() else ROOT) / \
+    "10 - MAPA COMPLETO DE LA UNIFICACION.xlsx"
 
 S = json.load(open(D / "site.json", encoding="utf-8"))
 RAW = json.load(open(D / "raw.json", encoding="utf-8"))
@@ -732,7 +736,7 @@ for a, b_, c_, d_ in decisiones:
 for ws in wb.worksheets:
     pintar(ws)
 wb.save(SALIDA)
-print("Excel: {}".format(SALIDA.name))
+print("Excel: {}".format(SALIDA))
 print("hojas:", len(wb.worksheets))
 print("URLs en el mapa completo:", len(universo))
 sin_destino = [u for u in universo.values()
