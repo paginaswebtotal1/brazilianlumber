@@ -55,7 +55,7 @@ export default function Home() {
               ["838", "unique pages"],
               [stats.products.toString(), "products"],
               [stats.posts.toString(), "guides"],
-              [stats.redirects.toLocaleString("en-US"), "301 redirects mapped"],
+              [stats.redirects.toLocaleString("en-US"), "URL mappings documented"],
             ].map(([n, l]) => (
               <div key={l} className="rounded-[--radius-card] border border-bark-700 bg-bark-800/60 px-4 py-5">
                 <dt className="font-[family-name:var(--font-display)] text-3xl font-semibold text-white">{n}</dt>

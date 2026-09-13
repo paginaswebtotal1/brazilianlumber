@@ -65,9 +65,12 @@ export default function Footer({ nav, stats }: { nav: Nav; stats: Record<string,
         <div className="mt-10 rounded-lg border border-ember-600/40 bg-ember-600/10 px-4 py-3 text-xs leading-relaxed text-ember-400">
           <strong className="font-semibold">Internal prototype.</strong> Unified architecture proposal for
           brazilianlumber.com, brazilianlumberlosangeles.com and brazilianlumbernewyork.com. It consolidates{" "}
-          {stats.crawled?.toLocaleString("en-US")} crawled URLs into {(838).toLocaleString("en-US")} unique pages, with{" "}
-          {stats.redirects?.toLocaleString("en-US")} 301 redirects mapped. Blocked from every search engine and not a
-          live storefront.
+          {stats.crawled?.toLocaleString("en-US")} crawled URLs into {(838).toLocaleString("en-US")} unique pages. The{" "}
+          {stats.redirects?.toLocaleString("en-US")} URL mappings are documented, not executed here — see{" "}
+          <Link href="/redirect-map/" className="underline">
+            the URL map
+          </Link>
+          . Blocked from every search engine and not a live storefront.
         </div>
 
         <div className="mt-6 flex flex-col gap-2 border-t border-bark-800 pt-6 text-xs text-bark-500 sm:flex-row sm:items-center sm:justify-between">

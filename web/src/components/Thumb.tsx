@@ -43,12 +43,13 @@ export default function Thumb({
       </div>
     );
   }
-  const initials = (label ?? alt)
-    .split(/\s+/)
-    .filter((w) => /[a-z0-9]/i.test(w))
-    .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
-    .join("");
+  // Solo cuentan las palabras que empiezan por letra: si no, "Ipe 5/4x6" daría
+  // "I5", que se lee como un error y no como una inicial.
+  const words = (label ?? alt).split(/[\s/-]+/).filter((w) => /^[a-z]/i.test(w));
+  const initials =
+    words.length >= 2
+      ? (words[0]![0]! + words[1]![0]!).toUpperCase()
+      : (words[0] ?? alt).slice(0, 2).toUpperCase();
   return (
     <div
       className="woodfill media rounded-[--radius-card] grid place-items-center"
