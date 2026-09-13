@@ -342,6 +342,9 @@ def main():
         hijos = [(r, v[0]) for r, v in ARBOL.items() if v[1] == ruta]
         desc_rutas = [r for r in ARBOL if r == ruta or r.startswith(ruta + "/")]
         todos = [p for r in desc_rutas for p in prods_por_cat.get(r, [])]
+        for r in desc_rutas:
+            todos += [p for p in by_type["product"]
+                      if r in (p.get("cats_extra") or []) and p not in todos]
         cats.append({
             "kind": "category", "path": "/" + ruta + "/", "slug": ruta.rsplit("/", 1)[-1],
             "route": ruta, "parent": ("/" + padre + "/") if padre else None,
@@ -384,6 +387,9 @@ def main():
             "kind": "product", "path": path_of(d["url_destino"]), "slug": d["slug"],
             "title": d["titulo"], "h1": d["titulo"],
             "category": "/" + d["cat"] + "/", "categoryTitle": ARBOL[d["cat"]][0],
+            # Categorias adicionales. No crean URL: el producto sigue viviendo
+            # solo en /product/{slug}/, que es la regla de oro del estudio.
+            "alsoIn": ["/" + c + "/" for c in d.get("cats_extra", []) if c in ARBOL],
             "attrs": a, "specs": specs_producto(a),
             "blocks": blocks_gen, "faq": d.get("faq", []),
             "description": desc[:280],

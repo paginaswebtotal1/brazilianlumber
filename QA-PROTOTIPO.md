@@ -31,21 +31,11 @@ Generado por `pipeline/p4_export.py` el 2026-09-13.
 
 Nada de esto rompe el prototipo, pero conviene resolverlo antes de la migracion real.
 
-**1. Categorias del menu sin ningun producto (13).** Existen en el arbol acordado pero ningun producto de los 3 portales cae en ellas. O se les asigna surtido, o se sacan del menu.
+**1. Categorias del menu sin ningun producto (3).** Existen en el arbol acordado pero ningun producto de los 3 portales cae en ellas. O se les asigna surtido, o se sacan del menu.
 
-- `/decking/composite/azek/` AZEK Decking
-- `/decking/composite/moistureshield/` MoistureShield Decking
-- `/decking/thermally-modified/ayous/` Thermo Ayous Decking
 - `/decking/thermally-modified/durathermo/` Durathermo Decking
-- `/cladding-siding/composite/` Composite Cladding
-- `/cladding-siding/battens-louvers/` Battens and Louvers
-- `/fencing-gates/` Fencing and Gates
 - `/fencing-gates/wood/` Wood Fencing
-- `/fencing-gates/composite/` Composite Fencing
-- `/fencing-gates/gates/` Gates
 - `/flooring/engineered/` Engineered Flooring
-- `/accessories/tools/` Tools
-- `/accessories/maintenance/` Cleaning and Maintenance
 
 **2. Paginas de prueba que sobrevivieron a la consolidacion (11).** Estan publicadas en el prototipo para no perder ninguna URL, pero marcadas noindex y fuera del menu y del sitemap. Recomendacion: eliminarlas en la migracion real.
 

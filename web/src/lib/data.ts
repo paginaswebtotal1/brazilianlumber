@@ -51,6 +51,7 @@ export interface Doc {
   // ficha de producto
   category?: string;
   categoryTitle?: string;
+  alsoIn?: string[];
   specs?: Spec[];
   faq?: { q: string; a: string }[];
   attrs?: Record<string, string | null>;
@@ -131,9 +132,10 @@ export function getCategory(path: string): Doc | undefined {
 /** Productos de una categoría, incluidos los de sus subcategorías. */
 export function productsIn(catPath: string, deep = true): Doc[] {
   const p = norm(catPath);
-  const out = S.products.filter((x) =>
-    deep ? x.category === p || x.category!.startsWith(p) : x.category === p,
-  );
+  // Un producto cuenta en su categoria principal y en las secundarias. No hay
+  // segunda URL: sigue viviendo solo en /product/{slug}/.
+  const en = (c: string) => (deep ? c === p || c.startsWith(p) : c === p);
+  const out = S.products.filter((x) => en(x.category!) || (x.alsoIn ?? []).some(en));
   return out.sort((a, b) => (b.clicks ?? 0) - (a.clicks ?? 0) || a.title.localeCompare(b.title));
 }
 

@@ -67,83 +67,144 @@ def grado(slug, titulo):
     return out[0] if out else None
 
 # ---------- clasificador a la taxonomia ----------
-PISTAS = [
- (r"deck[- ]?tile", "decking/deck-tiles"),
- (r"joist|pedestal|substructure|grad\b|sleeper", "accessories/substructure"),
- (r"fastener|screw|plug|clip|bit|drill|bolt|nail", "accessories/fasteners"),
- (r"oil|sealer|seal\b|finish|stain|coat|brighten|clean|wisecoat|glue", "accessories/finishes-sealers"),
- (r"cable|railing|handrail|baluster", "accessories/railing-cable"),
- (r"wall[- ]?panel|cladding|siding|shiplap|slat[- ]?wall", "cladding-siding/wood-wall-panels"),
- (r"batten|louver", "cladding-siding/battens-louvers"),
- (r"fence|fencing", "fencing-gates/wood"),
- (r"\bgate\b", "fencing-gates/gates"),
- (r"floor", "flooring/solid-hardwood"),
- (r"slab|live[- ]?edge", "slabs"),
- (r"turf|artificial[- ]?grass", "landscaping/artificial-turf"),
- (r"\bivy\b", "landscaping/artificial-ivy"),
- (r"bamboo", "decking/bamboo"),
- (r"\bpvc\b", "decking/pvc"),
- (r"thermal|thermo|durathermo|ayous", "decking/thermally-modified"),
- (r"composite", "decking/composite"),
- (r"deck", "decking/tropical-hardwood"),
- (r"lumber|timber|board", "lumber/tropical-hardwood"),
+# ---------------------------------------------------------------- clasificador
+#
+# ORDEN DE PRIORIDAD. Esto importa mas que los patrones en si.
+#
+# La primera version daba prioridad a la marca, y fue un error: mandaba TODO lo
+# de DeckoTech a decking, incluidas sus vallas, sus puertas, su revestimiento y
+# sus lamas. Resultado: 8 categorias del menu se quedaron vacias teniendo
+# producto de sobra.
+#
+# Manda el TIPO de producto. Una valla es una valla, la fabrique quien la
+# fabrique. La marca solo decide la subcategoria dentro de ese tipo.
+
+# 1. Tipos de producto, del mas especifico al mas general.
+TIPOS = [
+    # cerramientos
+    (r"\bgate\b|double[- ]gate|single[- ]gate", "fencing-gates/gates"),
+    (r"fence|fencing", "fencing-gates"),
+    # revestimiento
+    (r"batten|louver", "cladding-siding/battens-louvers"),
+    (r"wall[- ]?panel|slat[- ]?wall", "cladding-siding/wood-wall-panels"),
+    (r"cladding|shiplap|siding|teto[- ]?vinilico|finishing[- ]?trim", "cladding-siding"),
+    # suelo y superficies
+    (r"deck[- ]?tile", "decking/deck-tiles"),
+    (r"floor", "flooring/solid-hardwood"),
+    (r"slab|live[- ]?edge", "slabs"),
+    # paisajismo
+    (r"turf|artificial[- ]?grass", "landscaping/artificial-turf"),
+    (r"\bivy\b", "landscaping/artificial-ivy"),
+    # accesorios: lo especifico antes que lo general
+    (r"cleaner|brightener|brighten|maintenance|wash", "accessories/maintenance"),
+    (r"drill|bit\b|cutter|arbor|\btool\b|saw\b|spacer|jig", "accessories/tools"),
+    (r"\boil\b|sealer|seal\b|finish|stain|wisecoat|coating|glue|wax", "accessories/finishes-sealers"),
+    (r"cable|railing|handrail|baluster|post[- ]?cap", "accessories/railing-cable"),
+    (r"joist|pedestal|substructure|sleeper|grad\b|flashing|tape", "accessories/substructure"),
+    (r"fastener|screw|plug|clip|bolt|nail|bracket", "accessories/fasteners"),
 ]
-MARCA_RUTA = {
- "trex": "decking/composite/trex", "timbertech": "decking/composite/timbertech",
- "azek": "decking/composite/azek", "moistureshield": "decking/composite/moistureshield",
- "deckotech": "decking/composite/deckotech", "zuri": "decking/composite/zuri",
- "newtechwood": "decking/composite/newtechwood", "armadillo": "decking/composite/armadillo",
- "calibamboo": "decking/bamboo", "grad": "accessories/substructure",
- "wisewrap": "accessories/substructure",
+
+# 2. Subcategoria por marca DENTRO de un tipo, cuando el arbol la tiene.
+MARCA_EN_TIPO = {
+    "fencing-gates": {"deckotech": "fencing-gates/composite", "trex": "fencing-gates/composite",
+                      "timbertech": "fencing-gates/composite"},
+    "cladding-siding": {"deckotech": "cladding-siding/composite", "trex": "cladding-siding/composite",
+                        "newtechwood": "cladding-siding/composite"},
 }
+
+# 3. Marca -> rama de decking, solo cuando el producto NO es de un tipo propio.
+MARCA_RUTA = {
+    "trex": "decking/composite/trex", "timbertech": "decking/composite/timbertech",
+    "azek": "decking/composite/azek", "moistureshield": "decking/composite/moistureshield",
+    "deckotech": "decking/composite/deckotech", "zuri": "decking/composite/zuri",
+    "newtechwood": "decking/composite/newtechwood", "armadillo": "decking/composite/armadillo",
+    "calibamboo": "decking/bamboo",
+}
+
+# 4. Maderas termotratadas: la especie decide la subcategoria.
+TERMO = [(r"ayous", "decking/thermally-modified/ayous"),
+         (r"durathermo", "decking/thermally-modified/durathermo")]
+
 DOMESTICAS = {"red-oak", "white-oak", "maple", "walnut", "sapele", "mahogany",
               "santos-mahogany", "teak"}
 BLANDAS = {"cedar", "cypress", "douglas-fir", "spruce", "pine", "redwood"}
 
+
 def clasificar(slug, titulo, texto, esp, mrc, med):
     b = f"{slug} {titulo}".lower()
-    # 1. marca manda cuando es una linea de composite/PVC
-    if mrc and mrc in MARCA_RUTA:
-        r = MARCA_RUTA[mrc]
-        if mrc == "deckwise":
-            pass
-        elif re.search(r"pvc", b) and mrc in ("azek", "timbertech", "moistureshield", "trex"):
-            return "decking/pvc"
-        else:
-            return r
-    if mrc == "deckwise":
-        if re.search(r"oil|sealer|coat|clean|brighten|finish", b):
-            return "accessories/finishes-sealers"
-        if re.search(r"clean|brighten", b):
-            return "accessories/maintenance"
-        return "accessories/fasteners"
-    # 2. mapa explicito de slugs de categoria antigua
+
+    # (a) El mapa explicito de slugs de categoria antigua es la palabra del estudio.
     if slug in MAP:
         return MAP[slug]
-    # 3. especie tropical de decking
-    if esp in ESPECIE and not re.search(r"wall[- ]?panel|floor|slab|fence|tile", b):
+
+    # (b) El TIPO de producto manda sobre la marca.
+    for rx, ruta in TIPOS:
+        if not re.search(rx, b):
+            continue
+        # ¿tiene el arbol una subcategoria para esta marca dentro de este tipo?
+        if mrc and ruta in MARCA_EN_TIPO and mrc in MARCA_EN_TIPO[ruta]:
+            return MARCA_EN_TIPO[ruta][mrc]
+        # revestimiento de madera maciza va al nodo de paneles
+        if ruta == "cladding-siding" and esp:
+            return "cladding-siding/wood-wall-panels"
+        return ruta
+
+    # (c) Madera termotratada: la especie decide.
+    if re.search(r"thermal|thermo|termo", b):
+        for rx, ruta in TERMO:
+            if re.search(rx, b):
+                return ruta
+        return "decking/thermally-modified"
+
+    # (d) Bambu y PVC generico sin marca.
+    if re.search(r"bamboo", b):
+        return "decking/bamboo"
+
+    # (e) Ahora si, la marca.
+    if mrc in MARCA_RUTA:
+        return MARCA_RUTA[mrc]
+    if mrc == "deckwise":
+        return "accessories/fasteners"
+    if mrc in ("grad", "wisewrap"):
+        return "accessories/substructure"
+
+    # (f) PVC sin marca reconocida.
+    if re.search(r"\bpvc\b", b):
+        return "decking/pvc"
+
+    # (g) Especie. Una tropical en escuadria de estructura (2x, 4x, 6x) y sin
+    # "decking" en el nombre es madera dimensional, no tarima.
+    if esp in ESPECIE:
         if med and med.startswith(("2x", "4x", "6x", "8x")) and "deck" not in b:
             return "lumber/tropical-hardwood"
         return ESPECIE[esp]
-    # 4. pistas por palabra clave
-    for rx, ruta in PISTAS:
-        if re.search(rx, b):
-            if ruta == "lumber/tropical-hardwood":
-                if esp in DOMESTICAS:
-                    return "lumber/domestic-hardwood"
-                if esp in BLANDAS:
-                    return "lumber/softwood"
-            if ruta == "decking/tropical-hardwood" and esp in ESPECIE:
-                return ESPECIE[esp]
-            return ruta
-    # 5. por especie sola
     if esp in DOMESTICAS:
         return "lumber/domestic-hardwood"
     if esp in BLANDAS:
         return "lumber/softwood"
-    if esp in ESPECIE:
-        return ESPECIE[esp]
+    if re.search(r"deck", b):
+        return "decking"
+    if re.search(r"lumber|timber|board", b):
+        return "lumber/tropical-hardwood"
     return "accessories"
+
+
+def secundarias(slug, titulo, principal, mrc):
+    """Categorias adicionales en las que el producto tambien debe aparecer.
+
+    La arquitectura del estudio lo contempla: como el producto vive siempre en
+    /product/{slug}/, pertenecer a varias categorias NO genera una segunda URL.
+    Asi una tarima de PVC de AZEK aparece en la rama de la marca y en la de PVC,
+    que es donde la busca el cliente, sin duplicar nada.
+    """
+    b = f"{slug} {titulo}".lower()
+    extra = []
+    if re.search(r"\bpvc\b", b) and principal != "decking/pvc":
+        extra.append("decking/pvc")
+    if re.search(r"composite", b) and principal.startswith("fencing-gates"):
+        extra.append("fencing-gates/composite")
+    return [e for e in dict.fromkeys(extra) if e != principal]
+
 
 def main():
     raw = json.load(open(D / "raw.json", encoding="utf-8"))
@@ -161,6 +222,7 @@ def main():
             "uso": MEDIDAS.get(med, (None, None))[1] if med else None,
         }
         d["cat"] = clasificar(d["slug"], d["titulo"], d["texto"], esp, mrc, med)
+        d["cats_extra"] = secundarias(d["slug"], d["titulo"], d["cat"], mrc)
     json.dump(surv, open(D / "classified.json", "w", encoding="utf-8"), ensure_ascii=False)
 
     from collections import Counter
