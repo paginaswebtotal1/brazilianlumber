@@ -712,6 +712,17 @@ def main():
 
     absorbed_home = []
 
+    # /shop/ tiene pagina propia en la aplicacion, con su titulo. El documento
+    # heredado de WordPress conservaba el viejo ("Tropical & Exotic Hardwoods"),
+    # asi que el Excel decia una cosa y la pagina ensenaba otra.
+    for pg in pages:
+        if pg["path"] == "/shop/":
+            pg["title"] = "Full Catalog"
+            pg["h1"] = "The full catalog"
+            pg["description"] = ("The complete Brazilian Lumber catalog: tropical hardwood and "
+                                 "composite decking, cladding, fencing, flooring, slabs, "
+                                 "landscaping and accessories.")
+
     # ---- las portadas
     #
     # La raiz de cada dominio va a la raiz del portal unificado. Ni la portada
