@@ -56,7 +56,7 @@ def texto_de_bloques(blocks):
     return " ".join(out)
 
 
-def pares_similares(textos, ids, umbral=PARECIDO, min_palabras=40):
+def pares_similares(textos, ids, umbral=PARECIDO, min_palabras=15):
     """Devuelve los pares por encima del umbral. Por bloques: la matriz
     completa de 2.197 x 2.197 cabe, pero la de 10.000 x 10.000 no, y este
     codigo tiene que seguir sirviendo cuando el catalogo crezca."""
@@ -64,8 +64,8 @@ def pares_similares(textos, ids, umbral=PARECIDO, min_palabras=40):
     if len(validos) < 2:
         return []
     corpus = [textos[i] for i in validos]
-    vec = TfidfVectorizer(analyzer="word", ngram_range=(1, 2), min_df=2,
-                          sublinear_tf=True, max_features=200000)
+    vec = TfidfVectorizer(analyzer="word", ngram_range=(1, 2), min_df=1,
+                          sublinear_tf=True, max_features=400000)
     X = vec.fit_transform(corpus)
     pares = []
     n = X.shape[0]
@@ -115,8 +115,10 @@ def analiza_origen():
 def analiza_destino():
     site = json.load(open(D / "site.json", encoding="utf-8"))
     COLL = ("categories", "products", "posts", "postcats", "pages")
-    docs = [d for c in COLL for d in site[c]
-            if not d.get("noindex") and d.get("sub") != "junk"]
+    # SIN exclusiones: entran tambien las noindex y las de prueba. Una pagina
+    # noindex no compite en Google, pero un motor generativo puede leerla
+    # igualmente, y ademas hay que saber si existe para poder decidir.
+    docs = [d for c in COLL for d in site[c]]
     textos = [normaliza(texto_de_bloques(d["blocks"])) for d in docs]
     ids = [(d["kind"], d["path"], d["title"], d.get("sub") or "") for d in docs]
 
@@ -138,6 +140,16 @@ def analiza_destino():
         "pares_casi": len([p for p in pares if CASI <= p[0] < IDENTICO]),
         "documentos_en_riesgo": len(implicados),
         "por_tipo": dict(por_tipo),
+        "distribucion": {
+            "0.95-1.00": len([p for p in pares if p[0] >= 0.95]),
+            "0.90-0.95": len([p for p in pares if 0.90 <= p[0] < 0.95]),
+            "0.85-0.90": len([p for p in pares if 0.85 <= p[0] < 0.90]),
+            "0.80-0.85": len([p for p in pares if 0.80 <= p[0] < 0.85]),
+            "0.75-0.80": len([p for p in pares if 0.75 <= p[0] < 0.80]),
+            "0.60-0.75": len([p for p in pares if 0.60 <= p[0] < 0.75]),
+        },
+        "analizados": len([t for t in textos if len(t.split()) >= 15]),
+        "excluidos_por_cortos": len(textos) - len([t for t in textos if len(t.split()) >= 15]),
         "top": [{"similitud": round(s, 3), "a": a[1], "b": b[1],
                  "tipo_a": a[0], "tipo_b": b[0], "titulo_a": a[2], "titulo_b": b[2]}
                 for s, a, b in pares[:400]],

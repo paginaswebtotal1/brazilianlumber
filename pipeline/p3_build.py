@@ -113,6 +113,10 @@ def specs_producto(a):
         rows.append(("Brand", m[0]))
         rows.append(("Material", titlecase(m[1])))
         rows.append(("Warranty", titlecase(m[2])))
+    if a.get("coleccion"):
+        rows.append(("Collection", a["coleccion"]))
+    if a.get("largo"):
+        rows.append(("Board length", "{} ft".format(a["largo"])))
     if a.get("grado"):
         rows.append(("Grade", a["grado"]))
     rows.append(("Moisture content", "Kiln dried to 12-16% for exterior use"))
@@ -186,6 +190,21 @@ def gen_producto(d):
         bl.append({"t": "p", "text": linea + ". Ask the sales desk for the current "
                                      "specification sheet, stock and lead time on this exact "
                                      "reference before you specify it."})
+
+    # ---- coleccion y largo: lo que separa dos referencias de la misma marca
+    if a.get("coleccion") or a.get("largo"):
+        trozos = []
+        if a.get("coleccion"):
+            trozos.append("This is the {} range".format(a["coleccion"]))
+        if a.get("largo"):
+            trozos.append("supplied in {} foot lengths".format(a["largo"]))
+            if a.get("medida") and a["medida"] in _med.DIM:
+                _ancho = _med.DIM[a["medida"]][1]
+                _cob = round((_ancho + _med.GAP) / 12 * a["largo"], 2)
+                trozos.append("so each board covers about {} square feet".format(_cob))
+        bl.append({"t": "p", "text": ", ".join(trozos) +
+                   ". Length matters more than people expect: matching the board length to the "
+                   "deck run is what removes the offcut from the order."})
 
     # ---- cifras propias de ESTA escuadria
     #
@@ -717,6 +736,25 @@ def main():
 
         UMBRAL = 0.97
         padre_de = {}
+
+        # Antes del umbral: dos fichas con el MISMO titulo y la misma medida no
+        # son parecidas, son la misma. Se fusionan aunque el texto difiera algo.
+        _por_titulo = {}
+        for x in fusionables:
+            if x["kind"] != "product":
+                continue
+            clave = (x["title"].strip().lower(),
+                     (x.get("attrs") or {}).get("medida"),
+                     (x.get("attrs") or {}).get("coleccion"),
+                     (x.get("attrs") or {}).get("largo"))
+            _por_titulo.setdefault(clave, []).append(x)
+        for clave, grupo in _por_titulo.items():
+            if len(grupo) < 2:
+                continue
+            grupo.sort(key=lambda x: (-(x["clicks"] or 0), len(x["slug"])))
+            raiz = grupo[0]["path"]
+            for x in grupo[1:]:
+                padre_de.setdefault(x["path"], raiz)
         for i in range(len(fusionables)):
             for j in _np.where(sim[i] >= UMBRAL)[0]:
                 if j <= i:

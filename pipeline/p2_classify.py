@@ -13,6 +13,17 @@ D = Path(__file__).resolve().parent.parent / "data"
 DIM = re.compile(r"(?<![0-9])(5[-/]4|1|2|4|6|8)\s*[x×]\s*(2|4|6|8|10|12)(?![0-9])")
 
 def medida(slug, titulo):
+    # La tornilleria se nombra calibre x longitud, y la longitud suele llevar
+    # fraccion: 8x2" y 8x2-1/2" son productos distintos. Leyendo solo "8x2" los
+    # dos salian con la misma ficha.
+    base = (slug + " " + titulo).lower()
+    if re.search(r"screw|fastener|plug|clip|bolt|nail", base):
+        m = re.search(r"(\d{1,2})\s*[x\u00d7]\s*(\d{1,2})(?:\s*[-\s]\s*(\d)[/-](\d))?", base)
+        if m:
+            largo = m.group(2)
+            if m.group(3) and m.group(4):
+                largo += "-{}/{}".format(m.group(3), m.group(4))
+            return "{}x{}".format(m.group(1), largo)
     for s in (slug.replace("_", "-"), titulo.lower()):
         m = DIM.search(s.replace(" ", ""))
         if m:
@@ -60,6 +71,38 @@ def marca(slug, titulo, texto):
 GRADO = [("clear", "Clear"), ("standard", "Standard"), ("select", "Select"),
          ("rough", "Rough Sawn"), ("s4s", "S4S"), ("kd", "Kiln Dried"),
          ("grooved", "Grooved"), ("pregrooved", "Pre-Grooved")]
+
+# Colecciones y gamas comerciales. Dos productos de la misma marca y medida
+# pueden ser gamas distintas, con precio y acabado distintos.
+COLECCIONES = [
+    "enhance naturals", "enhance basics", "transcend lineage", "transcend",
+    "select", "signature", "harvest collection", "vintage collection",
+    "landmark collection", "arbor collection", "terrain", "prime plus",
+    "legacy", "reserve", "vision", "lifestyle", "essence", "prestige",
+    "terra collection", "terra", "solara", "grid strong", "silent haven",
+    "smooth shield", "harmony", "origens", "jungle", "modern", "refined",
+    "enduring", "premier", "classic",
+]
+
+
+def coleccion(slug, titulo):
+    """Gama comercial dentro de la marca."""
+    b = (slug.replace("-", " ") + " " + titulo).lower()
+    for c in sorted(COLECCIONES, key=len, reverse=True):
+        if c in b:
+            return c.title()
+    return None
+
+
+def largo(slug, titulo):
+    """Largo de la tabla en pies, cuando el nombre lo indica (1x6-16)."""
+    b = slug + " " + titulo
+    m = re.search(r"\d\s*[x\u00d7]\s*\d{1,2}\s*[-\u2013]\s*(8|10|12|14|16|18|20)\b", b.lower())
+    if m:
+        return int(m.group(1))
+    m = re.search(r"\b(8|10|12|14|16|18|20)\s*(?:ft|foot|feet|')\b", b.lower())
+    return int(m.group(1)) if m else None
+
 
 def grado(slug, titulo):
     b = f"{slug} {titulo}".lower()
@@ -218,6 +261,8 @@ def main():
         d["attr"] = {
             "especie": esp, "marca": mrc, "medida": med,
             "grado": grado(d["slug"], d["titulo"]),
+            "coleccion": coleccion(d["slug"], d["titulo"]),
+            "largo": largo(d["slug"], d["titulo"]),
             "real": MEDIDAS.get(med, (None, None))[0] if med else None,
             "uso": MEDIDAS.get(med, (None, None))[1] if med else None,
         }

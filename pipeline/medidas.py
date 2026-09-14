@@ -29,6 +29,15 @@ DIM = {
     "4x4":    (3.5,  3.5,  "posts", 0),
     "6x6":    (3.5,  5.5,  "heavy posts and beams", 0),
     "8x8":    (7.5,  7.5,  "timber columns", 0),
+    "1x2":    (0.75, 1.5,  "trim, battens and edging", 0),
+    "1x10":   (0.75, 9.25, "wide fascia and riser stock", 16),
+    "4x6":    (3.5,  5.5,  "beams and heavy posts", 0),
+    "4x8":    (3.5,  7.25, "beams", 0),
+    "4x10":   (3.5,  9.25, "heavy beams", 0),
+    "4x12":   (3.5,  11.25, "heavy beams and headers", 0),
+    "5/4x10": (1.0,  9.25, "wide heavy board for treads and fascia", 24),
+    "6x8":    (5.5,  7.25, "timber beams", 0),
+    "8x12":   (7.5,  11.25, "timber columns and beams", 0),
 }
 
 GAP = 0.1875  # separacion habitual entre tablas, en pulgadas

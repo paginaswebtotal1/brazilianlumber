@@ -348,6 +348,8 @@ def gen_categoria(ruta, titulo, hijos, prods, padre_titulo=None):
         "How to choose",
         "What to look at before you order",
         "Choosing the right one",
+        "What decides it",
+        "Before you commit to a material",
     ])})
     # Tres criterios de los cuatro, rotando por ruta: las categorias hermanas
     # comparten familia, y con la lista completa salian casi identicas.
@@ -394,7 +396,14 @@ def gen_categoria(ruta, titulo, hijos, prods, padre_titulo=None):
 
     # ---------------------------------------------------------- subcategorias
     if hijos:
-        bl.append({"t": "h2", "text": "Browse {}".format(titulo.lower())})
+        # Una categoria con hijas no repite el discurso de la familia: lo que
+        # aporta es orientar hacia la rama correcta. Sin esto, /fencing-gates/
+        # y /fencing-gates/composite/ salian con un 96% de similitud.
+        bl.append({"t": "h2", "text": "Which branch you need"})
+        bl.append({"t": "p", "text":
+            "{} splits into {} branches. The difference between them is the material and how "
+            "it is fixed, not the price bracket, so pick the branch by the application and "
+            "then compare inside it.".format(titulo, len(hijos))})
         bl.append({"t": "list", "items": [h[1] for h in hijos]})
 
     # ---------------------------------------------------------- preguntas
