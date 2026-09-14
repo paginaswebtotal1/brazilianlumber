@@ -698,6 +698,40 @@ def main():
             pc["image"] = elegida
             pc["imageAlt"] = pc["title"]
 
+    absorbed_home = []
+
+    # ---- las portadas
+    #
+    # La raiz de cada dominio va a la raiz del portal unificado. Ni la portada
+    # de Miami se convierte en subpagina, ni una pagina de pruebas se convierte
+    # en portada.
+    RAICES = {"https://brazilianlumber.com/", "https://brazilianlumber.com",
+              "https://brazilianlumberlosangeles.com/", "https://brazilianlumberlosangeles.com",
+              "https://brazilianlumbernewyork.com/", "https://brazilianlumbernewyork.com"}
+
+    portada_real = None
+    for pg in pages:
+        if any(o in RAICES for o in (pg.get("origins") or [])):
+            if pg["portal_origen"] == "MIA" if "portal_origen" in pg else True:
+                if portada_real is None or (pg.get("clicks") or 0) > (portada_real.get("clicks") or 0):
+                    portada_real = pg
+
+    # Nada que no sea la portada puede ocupar la raiz.
+    for pg in pages:
+        if pg["path"] == "/" and pg is not portada_real:
+            pg["path"] = "/" + pg["slug"] + "/"
+            pg["noindex"] = True
+            pg["sub"] = "junk"
+
+    if portada_real is not None:
+        # Su contenido es el de la portada, asi que se absorbe en la raiz: no
+        # debe existir ademas bajo su slug, seria la misma pagina dos veces.
+        absorbed_home.append({"path": portada_real["path"], "from": portada_real["origins"],
+                              "into": "/"})
+        pages = [x for x in pages if x is not portada_real]
+        print("portada: {} absorbida en la raiz ({} clics)".format(
+            portada_real["path"], int(portada_real.get("clicks") or 0)))
+
     # ---- fichas practicamente identicas: se consolidan, no se reescriben
     #
     # La auditoria de contenido duplicado destapo dos cosas distintas con la
@@ -727,7 +761,10 @@ def main():
 
         # Se consolidan productos Y paginas: la auditoria encontro la misma
         # pagina de ciudad publicada en dos rutas distintas.
-        fusionables = products + [x for x in pages if x.get('sub') != 'junk']
+        # Las paginas con destino explicito en CONSOLIDAR no entran: su destino
+        # ya esta decidido por la taxonomia y no lo decide un parecido de texto.
+        fusionables = products + [x for x in pages
+                                  if x.get('sub') != 'junk' and x['slug'] not in CONSOLIDAR]
         textos = [_plano(x) for x in fusionables]
         vec = TfidfVectorizer(analyzer="word", ngram_range=(1, 2), min_df=2, sublinear_tf=True)
         X = vec.fit_transform(textos)
@@ -785,7 +822,12 @@ def main():
                 else:
                     (vivos if x['kind'] == 'product' else vivas_pag).append(x)
             products = vivos
-            pages = vivas_pag + [x for x in pages if x.get('sub') == 'junk']
+            # Se filtra la lista ORIGINAL en vez de reconstruirla: las paginas
+            # que quedaron fuera de la fusion (las de prueba y las que tienen
+            # destino explicito en CONSOLIDAR) tienen que seguir estando, o
+            # desaparecen sin dejar redireccion y su URL antigua muere en 404.
+            _fusionadas = {f["path"] for f in fusionadas}
+            pages = [x for x in pages if x["path"] not in _fusionadas]
             absorbed_prod = fusionadas
             print("fichas consolidadas por contenido identico: {}".format(len(fusionadas)))
         else:
@@ -797,7 +839,7 @@ def main():
     # Colisiones: una pagina legacy que ocupa la misma URL que un nodo de la taxonomia.
     # La categoria es la duena de la URL, asi que la pagina se absorbe dentro de ella.
     cat_by_path = {c["path"]: c for c in cats}
-    absorbed = list(absorbed_prod)
+    absorbed = list(absorbed_prod) + list(absorbed_home)
     keep = []
     for pg in pages:
         destino = CONSOLIDAR.get(pg["slug"])
@@ -824,6 +866,49 @@ def main():
     redirects = [{"from": r["url_origen"], "to": path_of(r["url_destino"]),
                   "portal": r["portal"], "type": r["tipo"]}
                  for r in raw if r["accion"] == "CONSOLIDAR-301" and r["url_destino"]]
+
+    # Resolucion de cadenas. Una consolidacion puede apuntar a algo que a su vez
+    # se consolido despues; sin esto queda un 301 hacia un 404, que es peor que
+    # no redirigir. Se recorre hasta el destino final.
+    vivos = {d["path"] for d in (cats + products + posts + postcats + pages)}
+    vivos |= {"/", "/shop/", "/guides/", "/search/", "/redirect-map/"}
+    salto = {a["path"]: a["into"] for a in absorbed if a["path"] != a["into"]}
+
+    def final(p):
+        visto = set()
+        while p in salto and p not in visto:
+            visto.add(p)
+            p = salto[p]
+        return p
+
+    for a in absorbed:
+        a["into"] = final(a["into"])
+    for r in redirects:
+        r["to"] = final(r["to"])
+
+    huerfanas = [r for r in redirects if r["to"] not in vivos]
+    if huerfanas:
+        print("AVISO: {} redirecciones sin destino vivo, se reapuntan".format(len(huerfanas)))
+        for r in huerfanas:
+            # Ultimo recurso: la rama padre de la ruta, y si no, el catalogo.
+            partes = [x for x in r["to"].strip("/").split("/") if x]
+            destino = "/shop/"
+            for n in range(len(partes) - 1, 0, -1):
+                cand = "/" + "/".join(partes[:n]) + "/"
+                if cand in vivos:
+                    destino = cand
+                    break
+            r["to"] = destino
+
+    # La raiz de cada dominio, a la raiz. Esto va despues de construir la lista
+    # y antes del encadenado, para que no lo pise ningun salto posterior.
+    for r in redirects:
+        if r["from"].rstrip("/") + "/" in RAICES:
+            r["to"] = "/"
+    for dom in ("https://brazilianlumber.com/", "https://brazilianlumberlosangeles.com/",
+                "https://brazilianlumbernewyork.com/"):
+        if not any(x["from"].rstrip("/") == dom.rstrip("/") for x in redirects):
+            redirects.append({"from": dom, "to": "/", "portal": "MIA", "type": "pages"})
 
     # Encadenado de redirecciones. Si una pagina se ha consolidado dentro de una
     # categoria, todo lo que apuntaba a ella tiene que apuntar ahora al destino
