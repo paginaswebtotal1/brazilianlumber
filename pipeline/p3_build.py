@@ -10,6 +10,7 @@ from taxonomia import ARBOL, MAP, ESPECIE
 from kb import ESPECIES, MARCAS, MEDIDAS, COLORES
 import contenido
 import contenido_paginas
+import medidas as _med
 
 D = Path(__file__).resolve().parent.parent / "data"
 HOST = "https://brazilianlumber.com"
@@ -155,10 +156,60 @@ def gen_producto(d):
                 "Miami, Los Angeles and New Jersey.".format(t))
     bl.append({"t": "p", "text": lead})
 
+    # El texto propio del producto es lo mas valioso que hay: es lo unico que
+    # ninguna plantilla puede replicar. Se aprovecha siempre que exista y no
+    # este duplicado en el origen.
     orig = [b for b in d["blocks"] if b["t"] == "p" and len(b.get("text", "")) > 80]
     if orig and not d.get("dup"):
-        for b in orig[:3]:
+        for b in orig[:4]:
             bl.append(b)
+    elif not orig and d.get("texto") and not d.get("dup"):
+        # Hay texto en WordPress pero venia dentro de una tabla o un shortcode
+        # que el extractor de bloques no supo abrir. Se recupera en crudo: son
+        # fichas tecnicas reales (medidas, clase, acabado, especie, longitud).
+        crudo = [x.strip() for x in d["texto"].splitlines() if len(x.strip()) > 25]
+        for trozo in crudo[:5]:
+            bl.append({"t": "p", "text": trozo[:600]})
+
+    # Cuando no hay especie ni marca reconocidas, el nombre del producto es la
+    # unica senal propia que queda. Sin esto, todas las fichas sin atributos
+    # acababan con el MISMO texto: fue exactamente lo que detecto la auditoria
+    # de contenido duplicado.
+    if not esp and not mrc:
+        import re as _re
+        tokens = [x for x in _re.split(r"[\s\-_/]+", t) if len(x) > 2 and not x.isdigit()]
+        propio = " ".join(dict.fromkeys(tokens))[:80]
+        dims = _re.findall(r'\d+(?:[.,]\d+)?\s*(?:mm|cm|["″]|′|x)\s*\d+(?:[.,]\d+)?[^,;.]{0,18}', t)
+        linea = "{} is catalogued as {}".format(t, propio.lower())
+        if dims:
+            linea += ", supplied at {}".format(dims[0].strip())
+        bl.append({"t": "p", "text": linea + ". Ask the sales desk for the current "
+                                     "specification sheet, stock and lead time on this exact "
+                                     "reference before you specify it."})
+
+    # ---- cifras propias de ESTA escuadria
+    #
+    # Es lo que separa de verdad una ficha de su hermana. Un Ipe 1x4 y un Ipe
+    # 5/4x6 comparten todo lo que se puede decir del Ipe, pero cubren distinto,
+    # pesan distinto y se piden en cantidades distintas. Esos numeros son
+    # reales, utiles para pedir material, y distintos en cada ficha.
+    num = _med.datos(a.get("medida"), esp[2] if esp else None)
+    if num:
+        frases = []
+        if num["vano"]:
+            frases.append("Over joists at {} inches on center".format(num["vano"]))
+        frases.append("each linear foot covers {} square feet with a 3/16 inch gap"
+                      .format(num["cobertura"]))
+        frases.append("so 100 square feet of deck takes about {} linear feet"
+                      .format(num["lineales_100"]))
+        texto = ", ".join(frases)
+        if num.get("lb_pie"):
+            texto += (". The section is {} square inches and it weighs about {} lb per linear "
+                      "foot, roughly {} lb for those 100 square feet, which is what decides "
+                      "whether the delivery needs a liftgate"
+                      .format(num["seccion"], num["lb_pie"], num["lb_100sqft"]))
+        bl.append({"t": "p", "text": texto + "."})
+        bl.append({"t": "p", "text": "This size is normally specified for {}.".format(num["uso"])})
 
     name = esp[0] if esp else (mrc[0] if mrc else t)
     bl.append({"t": "h2", "text": pick(slug + "w", [
@@ -168,12 +219,15 @@ def gen_producto(d):
     ])})
     items = []
     if esp:
-        items.append("Janka hardness of {:,} lbf, which is what keeps furniture legs and heel marks from "
-                     "denting the surface.".format(esp[1]))
-        items.append("Natural durability rated at {}, with no pressure treatment and no chemicals added.".format(esp[4]))
-        items.append("Color: {}. Left unfinished it weathers to a silver gray; oiled once a year it holds its "
-                     "original tone.".format(esp[3]))
-        items.append(esp[5][0].upper() + esp[5][1:] + ".")
+        # Solo dos lineas de especie. El desarrollo completo esta en la pagina
+        # de categoria, enlazada desde aqui: repetirlo en las 21 fichas de Ipe
+        # era lo que las convertia en duplicados entre si.
+        items.append("Janka hardness of {:,} lbf and {} outdoors with no chemical treatment."
+                     .format(esp[1], esp[4]))
+        items.append(pick(slug + "s", [
+            "Color: {}.".format(esp[3]),
+            "{}.".format(esp[5][0].upper() + esp[5][1:]),
+        ]))
     if mrc:
         items.append("{} construction: {}, {}.".format(mrc[0], mrc[1], mrc[3]))
         items.append("Backed by a {}.".format(mrc[2]))
@@ -185,6 +239,10 @@ def gen_producto(d):
     bl.append({"t": "list", "items": items})
 
     bl.append({"t": "h2", "text": "Installation notes"})
+    if num and num["vano"]:
+        bl.append({"t": "p", "text":
+            "Frame at {} inches on center for this thickness, and allow {} linear feet per 100 "
+            "square feet when you order.".format(num["vano"], num["lineales_100"])})
     if esp and esp[1] >= 1600:
         bl.append({"t": "p", "text": pick(slug + "i", [
             "Dense tropical hardwood has to be pre-drilled and counterbored before fastening; a screw driven "
@@ -621,10 +679,87 @@ def main():
             pc["image"] = elegida
             pc["imageAlt"] = pc["title"]
 
+    # ---- fichas practicamente identicas: se consolidan, no se reescriben
+    #
+    # La auditoria de contenido duplicado destapo dos cosas distintas con la
+    # misma solucion. Por un lado, productos duplicados en WordPress
+    # (armadillo-pvc-decking y armadillo-pvc-decking-2). Por otro, variantes de
+    # color del mismo articulo (Origens Okan, Tauari, Carvalho, Teca Bege), que
+    # son un producto con opciones, no cuatro productos.
+    #
+    # Inventarles textos distintos seria maquillar el problema. Lo correcto es
+    # que una pieza de contenido tenga una URL, que es la regla del estudio.
+    try:
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        import numpy as _np
+        import re as _re
+
+        def _plano(d):
+            out = []
+            for b in d["blocks"]:
+                if b["t"] == "list":
+                    out.append(" ".join(b["items"]))
+                elif b["t"] == "table":
+                    out.append(" ".join(str(c) for r in b["rows"] for c in r))
+                elif b["t"] != "img":
+                    out.append(b.get("text", ""))
+            t = " ".join(out).lower()
+            return _re.sub(r"[^a-z0-9 ]", " ", t)
+
+        # Se consolidan productos Y paginas: la auditoria encontro la misma
+        # pagina de ciudad publicada en dos rutas distintas.
+        fusionables = products + [x for x in pages if x.get('sub') != 'junk']
+        textos = [_plano(x) for x in fusionables]
+        vec = TfidfVectorizer(analyzer="word", ngram_range=(1, 2), min_df=2, sublinear_tf=True)
+        X = vec.fit_transform(textos)
+        sim = (X @ X.T).toarray()
+        _np.fill_diagonal(sim, 0)
+
+        UMBRAL = 0.97
+        padre_de = {}
+        for i in range(len(fusionables)):
+            for j in _np.where(sim[i] >= UMBRAL)[0]:
+                if j <= i:
+                    continue
+                a, b = fusionables[i], fusionables[j]
+                if a['kind'] != b['kind']:
+                    continue
+                # gana el que tiene mas demanda medida; a igualdad, el slug mas corto
+                ganador, perdedor = ((a, b) if (a["clicks"] or 0, -len(a["slug"])) >=
+                                     (b["clicks"] or 0, -len(b["slug"])) else (b, a))
+                raiz = padre_de.get(ganador["path"], ganador["path"])
+                if perdedor["path"] != raiz:
+                    padre_de.setdefault(perdedor["path"], raiz)
+
+        fusionadas = []
+        if padre_de:
+            vivos, vivas_pag = [], []
+            por_path = {x['path']: x for x in fusionables}
+            for x in fusionables:
+                destino = padre_de.get(x["path"])
+                if destino and destino in por_path and destino != x["path"]:
+                    fusionadas.append({"path": x["path"], "from": x["origins"], "into": destino})
+                    g = por_path[destino]
+                    g["clicks"] = (g["clicks"] or 0) + (x["clicks"] or 0)
+                    if not g["image"] and x["image"]:
+                        g["image"] = x["image"]
+                        g["imageAlt"] = g["title"]
+                else:
+                    (vivos if x['kind'] == 'product' else vivas_pag).append(x)
+            products = vivos
+            pages = vivas_pag + [x for x in pages if x.get('sub') == 'junk']
+            absorbed_prod = fusionadas
+            print("fichas consolidadas por contenido identico: {}".format(len(fusionadas)))
+        else:
+            absorbed_prod = []
+    except Exception as _e:
+        print("aviso: no se pudo consolidar por contenido ({})".format(type(_e).__name__))
+        absorbed_prod = []
+
     # Colisiones: una pagina legacy que ocupa la misma URL que un nodo de la taxonomia.
     # La categoria es la duena de la URL, asi que la pagina se absorbe dentro de ella.
     cat_by_path = {c["path"]: c for c in cats}
-    absorbed = []
+    absorbed = list(absorbed_prod)
     keep = []
     for pg in pages:
         destino = CONSOLIDAR.get(pg["slug"])

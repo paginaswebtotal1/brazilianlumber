@@ -334,13 +334,26 @@ def gen_categoria(ruta, titulo, hijos, prods, padre_titulo=None):
             "order, and the guidance below is what we tell customers who ask. Send us the "
             "specification and we come back with options, pricing and lead time."})
 
+    # Lo que de verdad distingue a una categoria de su hermana es lo que hay
+    # dentro. Sin esto, /landscaping/artificial-turf/ y /landscaping/artificial-ivy/
+    # salian con un 99,9% de similitud: misma familia, mismo texto.
+    if prods:
+        nombres = [p["titulo"] for p in sorted(prods, key=lambda x: -(x.get("clics") or 0))[:6]]
+        bl.append({"t": "p", "text":
+            "What sits in this category right now: {}. Stock moves, so ask the sales desk to "
+            "confirm before you specify.".format(unir(n[:60] for n in nombres))})
+
     # ---------------------------------------------------------- como elegir
     bl.append({"t": "h2", "text": pick(ruta + "e", [
         "How to choose",
         "What to look at before you order",
         "Choosing the right one",
     ])})
-    bl.append({"t": "list", "items": ["{}. {}".format(t, d) for t, d in fam["elegir"]]})
+    # Tres criterios de los cuatro, rotando por ruta: las categorias hermanas
+    # comparten familia, y con la lista completa salian casi identicas.
+    _h = int(hashlib.md5(ruta.encode()).hexdigest(), 16)
+    _sel = [fam["elegir"][(_h + i) % len(fam["elegir"])] for i in range(3)]
+    bl.append({"t": "list", "items": ["{}. {}".format(t, d) for t, d in _sel]})
 
     # ---------------------------------------------------------- tabla comparativa
     if len(especies) > 1:
@@ -447,8 +460,9 @@ def gen_postcat(titulo, posts, categoria=None):
         bl.append({"t": "h2", "text": "What these guides answer"})
         bl.append({"t": "list", "items": [p["title"] for p in recientes[:6]]})
 
-    bl.append({"t": "h2", "text": "Before you specify"})
-    bl.append({"t": "list", "items": [
+    bl.append({"t": "h2", "text": pick(titulo + "b", [
+        "Before you specify", "What we tell customers first", "Worth knowing up front"])})
+    _consejos = [
         "Ask for samples. Screen color is not wood color, and grain reads completely "
         "differently at full size.",
         "Check the substructure before the surface. The boards almost always outlast the frame "
@@ -457,12 +471,24 @@ def gen_postcat(titulo, posts, categoria=None):
         "against the tannins and stain the board around every fixing.",
         "Seal every cut end the same day it is cut. It is the cheapest item on the order and it "
         "prevents the most visible defect there is.",
-    ]})
+        "Check the local code before you order. Rail heights, fence heights and stair geometry "
+        "are decided by the inspector, not by the catalog.",
+        "Order the substructure at the same time. The frame under the boards is what usually "
+        "fails first, and it is the part nobody budgets for.",
+    ]
+    # Tres consejos de seis, elegidos por tema: dos paginas distintas no salen
+    # con la misma lista.
+    h = int(hashlib.md5(titulo.encode()).hexdigest(), 16)
+    bl.append({"t": "list", "items": [_consejos[(h + i * 2) % len(_consejos)] for i in range(3)]})
 
-    bl.append({"t": "h2", "text": "Where to buy"})
-    bl.append({"t": "p", "text":
-        "Everything discussed in these guides is stocked in our three yards in Miami, Los "
-        "Angeles and New Jersey, milled to order and shipped anywhere in the continental United "
-        "States. Send the specification and the sales desk comes back with pricing, lead time "
-        "and freight, usually the same day."})
+    bl.append({"t": "h2", "text": pick(titulo + "w", [
+        "Where to buy", "Getting it from us", "Ordering"])})
+    bl.append({"t": "p", "text": pick(titulo + "x", [
+        "Everything discussed in these guides is stocked in Miami, Los Angeles and New Jersey, "
+        "milled to order and shipped anywhere in the continental United States.",
+        "We hold this material in three yards and mill it to order, so the cut list goes out with "
+        "the quote rather than being solved on site.",
+        "Send the specification and the sales desk comes back with pricing, lead time and "
+        "freight, usually the same day, from whichever yard is closest to the job.",
+    ])})
     return bl

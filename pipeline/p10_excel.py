@@ -796,6 +796,131 @@ for a, b_, c_, d_ in decisiones:
     ws.row_dimensions[f].height = 46
     f += 1
 
+# ============================================================ 12 DUPLICADOS
+try:
+    DUP = json.load(open(D / "duplicados.json", encoding="utf-8"))
+except FileNotFoundError:
+    DUP = None
+
+if DUP:
+    o, dst = DUP.get("origen"), DUP.get("destino")
+    ws = hoja(wb, "12 CONTENIDO DUPLICADO",
+              "Contenido duplicado: antes y despues",
+              "Una URL unica no garantiza un contenido unico. Esto mide el texto, no la "
+              "direccion. Metodo: TF-IDF sobre n-gramas de palabra y similitud del coseno.")
+    anchos(ws, [52, 18, 18, 62, 62])
+
+    f = 4
+    ws.cell(f, 1, "LO QUE HAY HOY EN LOS 3 PORTALES").font = B
+    f += 1
+    cabecera(ws, ["Medida", "Cantidad", "Sobre el total", "Que significa", ""], f)
+    f += 1
+    if o:
+        filas = [
+            ("Documentos con texto suficiente", o["documentos"], "",
+             "Paginas con mas de 40 palabras, que son las que se pueden comparar"),
+            ("Pares practicamente identicos", o["pares_identicos"], "",
+             "Similitud igual o superior al 90%: para Google es la misma pagina"),
+            ("Pares casi duplicados", o["pares_casi"], "",
+             "Entre el 75% y el 90%: compiten entre si por la misma consulta"),
+            ("Pares duplicados ENTRE portales", o["pares_entre_portales"], "",
+             "Miami contra Los Angeles contra New Jersey. Es la duplicidad que "
+             "solo desaparece unificando"),
+            ("Documentos implicados", o["documentos_implicados"],
+             o["documentos_implicados"] / o["documentos"],
+             "Porcentaje del contenido actual que esta repetido en algun sitio"),
+        ]
+        for k, v, pct, expl in filas:
+            ws.cell(f, 1, k)
+            ws.cell(f, 2, v).number_format = "#,##0"
+            if pct:
+                ws.cell(f, 3, pct).number_format = "0.0%"
+                ws.cell(f, 3).font = B
+            ws.cell(f, 4, expl).alignment = Alignment(wrap_text=True, vertical="top")
+            ws.row_dimensions[f].height = 30
+            for c in range(1, 5):
+                ws.cell(f, c).fill = PatternFill("solid", fgColor=ROJO)
+            f += 1
+
+    f += 2
+    ws.cell(f, 1, "LO QUE QUEDA EN EL PORTAL UNIFICADO").font = B
+    f += 1
+    cabecera(ws, ["Medida", "Cantidad", "Sobre el total", "Que significa", ""], f)
+    f += 1
+    if dst:
+        filas = [
+            ("Documentos indexables", dst["documentos"], "",
+             "Solo los que van al indice: los noindex no compiten"),
+            ("Pares practicamente identicos", dst["pares_identicos"], "",
+             "Los que quedan son variantes de medida de la misma especie"),
+            ("Pares casi duplicados", dst["pares_casi"], "", ""),
+            ("Documentos implicados", dst["documentos_en_riesgo"],
+             dst["documentos_en_riesgo"] / dst["documentos"], ""),
+        ]
+        for k, v, pct, expl in filas:
+            ws.cell(f, 1, k)
+            ws.cell(f, 2, v).number_format = "#,##0"
+            if pct:
+                ws.cell(f, 3, pct).number_format = "0.0%"
+                ws.cell(f, 3).font = B
+            ws.cell(f, 4, expl).alignment = Alignment(wrap_text=True, vertical="top")
+            for c in range(1, 5):
+                ws.cell(f, c).fill = PatternFill("solid", fgColor=VERDE)
+            f += 1
+
+    if o and dst:
+        f += 2
+        ws.cell(f, 1, "LA COMPARACION").font = B
+        f += 1
+        antes = o["pares_identicos"]
+        desp = dst["pares_identicos"]
+        for linea in [
+            "Paginas practicamente identicas: {:,} hoy, {:,} en el portal unificado. "
+            "Una reduccion del {:.0f}%.".format(antes, desp, (1 - desp / max(antes, 1)) * 100),
+            "Las {:,} coincidencias entre portales desaparecen por completo: no puede haber "
+            "duplicidad entre tres webs cuando queda una.".format(o["pares_entre_portales"]),
+            "Lo que queda son variantes de medida de la misma especie (Ipe 1x4 contra Ipe "
+            "5/4x6). Comparten lo que se puede decir del Ipe y se diferencian en cobertura, "
+            "peso y cantidad por cada 100 pies cuadrados, que son cifras reales y propias.",
+            "Para eliminarlo del todo habria que unir las variantes de medida en una sola "
+            "ficha con selector, o encargar textos escritos a mano. Es una decision de "
+            "negocio, no un fallo tecnico.",
+        ]:
+            ws.cell(f, 1, linea)
+            ws.merge_cells(start_row=f, start_column=1, end_row=f, end_column=5)
+            ws.cell(f, 1).alignment = Alignment(wrap_text=True, vertical="top")
+            ws.row_dimensions[f].height = 34
+            f += 1
+
+    if o:
+        f += 2
+        ws.cell(f, 1, "EJEMPLOS: CONTENIDO IDENTICO ENTRE PORTALES (hoy)").font = B
+        f += 1
+        cabecera(ws, ["Similitud", "Portal", "URL", "Portal", "URL"], f)
+        f += 1
+        cross = [x for x in o["top"] if x["portal_a"] != x["portal_b"]][:60]
+        for x in cross:
+            ws.cell(f, 1, x["similitud"]).number_format = "0.00"
+            ws.cell(f, 2, x["portal_a"])
+            ws.cell(f, 3, x["a"])
+            ws.cell(f, 4, x["portal_b"])
+            ws.cell(f, 5, x["b"])
+            f += 1
+
+    if dst:
+        f += 2
+        ws.cell(f, 1, "LO QUE QUEDA POR REVISAR EN EL PORTAL NUEVO").font = B
+        f += 1
+        cabecera(ws, ["Similitud", "Tipo", "URL", "Tipo", "URL"], f)
+        f += 1
+        for x in dst["top"][:80]:
+            ws.cell(f, 1, x["similitud"]).number_format = "0.00"
+            ws.cell(f, 2, x["tipo_a"])
+            ws.cell(f, 3, x["a"])
+            ws.cell(f, 4, x["tipo_b"])
+            ws.cell(f, 5, x["b"])
+            f += 1
+
 # ------------------------------------------------------------------ cerrar
 for ws in wb.worksheets:
     pintar(ws)

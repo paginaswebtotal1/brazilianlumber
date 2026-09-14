@@ -271,34 +271,112 @@ def _bloques(specs):
     return out
 
 
+def _palabras(bloques):
+    n = 0
+    for b in bloques:
+        if b["t"] == "list":
+            n += sum(len(i.split()) for i in b["items"])
+        elif b["t"] != "img":
+            n += len(b.get("text", "").split())
+    return n
+
+
 def gen_pagina(slug, sub, originales):
-    """Devuelve los bloques finales de una pagina suelta."""
-    if slug in PAGINA:
-        # El contenido a medida va primero; el bloque comun cierra la pagina con
-        # lo que cualquier comprador necesita saber igualmente.
-        return _bloques(PAGINA[slug]) + _bloques(GENERICA.get(sub, GENERICA["company"])[-9:])
-    base = GENERICA.get(sub, GENERICA["company"])
-    return list(originales) + _bloques(base)
+    """Devuelve los bloques finales de una pagina suelta.
+
+    El bloque comun solo se anade si la pagina no llega sola. Ponerlo en todas
+    hacia que 40 paginas compartieran el mismo cierre, y la auditoria de
+    contenido duplicado las emparejaba entre si. Ademas se rota el orden por
+    slug, para que dos paginas que si lo necesiten no salgan calcadas.
+    """
+    propio = _bloques(PAGINA[slug]) if slug in PAGINA else list(originales)
+    if _palabras(propio) >= 180:
+        return propio
+    base = list(GENERICA.get(sub, GENERICA["company"]))
+    h = sum(ord(c) for c in slug)
+    base = base[h % 2:] + base[:h % 2]
+    return propio + _bloques(base[:6])
+
+
+# Cada zona tiene un almacen mas cercano y un problema climatico distinto. Eso
+# es lo unico que diferencia de verdad a una pagina de ciudad de otra: sin ello
+# las 50 salian identicas salvo el nombre, que es justo lo que hace que Google
+# elija una sola y que un motor generativo no sepa cual citar.
+ZONAS = {
+    "FL": ("Miami", "salt air, ultraviolet load and an afternoon storm most days of the summer. "
+                    "Boards here silver faster than anywhere else in the country, and coated "
+                    "fasteners corrode within a season"),
+    "CA": ("Los Angeles", "dry heat and a long rainless season, which pulls moisture out of the "
+                          "board. Kiln dried stock and generous gapping matter more here than "
+                          "rot resistance does"),
+    "TX": ("Miami", "extreme summer surface temperatures. Lighter species such as Garapa run "
+                    "noticeably cooler underfoot than Ipe on a July afternoon"),
+    "GA": ("Miami", "humidity and heavy pollen. Decks here need airflow underneath more than "
+                    "they need a coating on top"),
+    "SC": ("Miami", "coastal humidity and salt, which rules out anything depending on a film "
+                    "finish to survive"),
+    "NY": ("Newark", "freeze and thaw. Water that gets into an unsealed end grain in November "
+                     "splits the board by March"),
+    "NJ": ("Newark", "freeze and thaw, plus the road salt that gets carried onto the deck all "
+                     "winter"),
+    "AZ": ("Los Angeles", "an ultraviolet load that fades an unprotected surface in a single "
+                          "season"),
+    "MA": ("Newark", "freeze and thaw, and an installation window of only a few months"),
+    "CO": ("Los Angeles", "altitude, ultraviolet load and very low humidity"),
+}
+
+ESTADO_POR_CIUDAD = {
+    "miami": "FL", "fort lauderdale": "FL", "boca raton": "FL", "palm beach": "FL",
+    "naples": "FL", "orlando": "FL", "tampa": "FL", "jacksonville": "FL", "key west": "FL",
+    "coral gables": "FL", "coconut grove": "FL", "fort myers": "FL", "wellington": "FL",
+    "broward": "FL", "florida": "FL", "caribbean": "FL", "bahamas": "FL",
+    "los angeles": "CA", "san diego": "CA", "san francisco": "CA", "san jose": "CA",
+    "sacramento": "CA", "fresno": "CA", "anaheim": "CA", "santa barbara": "CA",
+    "altadena": "CA", "marina del rey": "CA", "california": "CA",
+    "houston": "TX", "dallas": "TX", "austin": "TX", "san antonio": "TX", "el paso": "TX",
+    "galveston": "TX", "corpus christi": "TX", "san marcos": "TX", "texas": "TX",
+    "atlanta": "GA", "savannah": "GA", "milton": "GA", "johns creek": "GA",
+    "berkeley lake": "GA", "georgia": "GA",
+    "charleston": "SC", "columbia": "SC", "beaufort": "SC", "south carolina": "SC",
+    "new york": "NY", "long island": "NY", "albany": "NY", "buffalo": "NY",
+    "rochester": "NY", "syracuse": "NY", "northeast": "NY",
+    "new jersey": "NJ", "massachusetts": "MA", "scottsdale": "AZ", "arizona": "AZ",
+    "colorado": "CO", "chicago": "NY",
+}
+
+
+def _zona(ciudad):
+    c = ciudad.lower()
+    for nombre, est in ESTADO_POR_CIUDAD.items():
+        if nombre in c:
+            return ZONAS[est]
+    return ("Miami", "the local climate, which should drive the species choice more than the "
+                     "price does")
 
 
 def gen_ubicacion(ciudad, especies_top):
     """Pagina de ciudad. Lo que aporta es cercania y logistica, no palabreria."""
+    almacen, clima = _zona(ciudad)
     return [
         {"t": "p", "text":
-            "We deliver to {} from the closest of our three yards, with the full catalog "
-            "available: tropical hardwood and composite decking, cladding, fencing, flooring "
-            "and dimensional lumber.".format(ciudad)},
+            "Orders for {} ship from our {} yard, with the full catalog available: tropical "
+            "hardwood and composite decking, cladding, fencing, flooring and dimensional "
+            "lumber.".format(ciudad, almacen)},
+        {"t": "h2", "text": "What the climate here does to a deck"},
+        {"t": "p", "text":
+            "What decides the specification in this area is {}. Choose the species for that "
+            "before you choose it for the price.".format(clima)},
         {"t": "h2", "text": "Delivering to {}".format(ciudad)},
         {"t": "list", "items": [
-            "Orders ship from {}, whichever is nearest to the jobsite.".format(unir(YARDS)),
-            "Cut to length in our own mill before it ships, so you are not paying freight on "
+            "Shipped from the {} yard, the closest of the three to this area.".format(almacen),
+            "Cut to length in our own mill before it leaves, so you are not paying freight on "
             "offcuts.",
-            "Lead time and freight are quoted together with the material, never added later.",
+            "Lead time and freight quoted together with the material, never added afterwards.",
         ]},
-        {"t": "h2", "text": "What gets specified here"},
+        {"t": "h2", "text": "What gets specified in {}".format(ciudad)},
         {"t": "p", "text":
-            "The most requested materials in this area are {}. If you are comparing options, "
-            "ask for samples before you commit: screen color is not wood color.".format(
-                unir(especies_top) if especies_top else
-                "Ipe, Cumaru and capped composite decking")},
+            "The most requested materials here are {}. Ask for samples before you commit: "
+            "screen color is not wood color, and grain reads completely differently at full "
+            "size.".format(unir(especies_top) if especies_top else
+                           "Ipe, Cumaru and capped composite decking")},
     ]
