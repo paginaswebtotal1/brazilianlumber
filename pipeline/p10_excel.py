@@ -150,7 +150,8 @@ def clasificar_suelta(url):
     if "?" in u:
         return "PARAMETRO", "URL con parametro: canonical a la version limpia"
     if "/wp-content/" in u or "/wp-includes/" in u:
-        return "NO-PUBLICO", "Fichero subido, no es una pagina"
+        return "FICHERO", ("Fichero de la biblioteca de medios. Se migra tal cual a la nueva "
+                           "instalacion conservando su ruta; no redirige a ninguna pagina")
     if any(k in u for k in ("/color/", "/length/", "/board-length/", "/upc/", "/pa_",
                             "/width/", "/thickness/", "/grade/", "/finish/", "/profile/")):
         return "ATRIBUTO", "Archivo de atributo de WooCommerce: duplica la categoria"
@@ -162,8 +163,11 @@ def clasificar_suelta(url):
         return "NOINDEX", "Paginacion: canonical a la primera pagina"
     if "/product-category/" in u:
         return "CONSOLIDAR-301", "Categoria antigua: va a su ruta limpia"
-    if "/attachment" in u or u.rstrip("/").endswith((".jpg", ".png", ".pdf", ".webp")):
-        return "NO-PUBLICO", "Adjunto o fichero, no es una pagina"
+    if "/attachment" in u or u.rstrip("/").endswith((".jpg", ".png", ".pdf", ".webp", ".gif",
+                                                     ".svg", ".mp4", ".doc", ".docx", ".xls",
+                                                     ".xlsx", ".zip")):
+        return "FICHERO", ("Adjunto o fichero. Se migra tal cual conservando su ruta; no "
+                           "redirige a ninguna pagina")
     if "/product/" in u:
         return "DESCATALOGADO", "Ficha retirada de WordPress que Google sigue conociendo"
     return "REVISAR", "Google la conoce pero WordPress ya no la publica: decidir destino"
@@ -184,10 +188,19 @@ def _por_slug(url):
 
 
 def destino_suelta(url, accion, padre):
-    """Adonde mandarla. Ninguna se queda sin respuesta."""
+    """Adonde mandarla. Ninguna se queda sin respuesta.
+
+    OJO con el orden: la accion se comprueba ANTES de intentar clasificar el
+    slug. Al reves, un PDF llamado Hardwoods_Spec_sheets_Brazilian acababa
+    redirigido a /accessories/, porque el clasificador de catalogo veia
+    palabras sueltas en el nombre del fichero y se las creia. Un fichero no
+    redirige a ninguna pagina: se migra como fichero.
+    """
     if accion == "ANCLA":
         base = url.split("#")[0]
         return base.replace("https://brazilianlumber.com", "") or "/"
+    if accion in ("NO-PUBLICO", "FICHERO"):
+        return ""
     if padre and padre.get("destino"):
         return padre["destino"]
 
@@ -255,6 +268,56 @@ for portal, datos in GSC["portales"].items():
             "fuente": "Solo Search Console",
         }
         sueltas += 1
+
+# Las paginas consolidadas dentro de una categoria ya no existen. Todo lo que
+# tuviera como destino una de ellas tiene que saltar al destino final, o el
+# mapa mandaria trafico a una URL que se apago.
+_salto = {}
+for a in S["absorbed"]:
+    if a["path"] != a["into"]:
+        _salto[a["path"]] = a["into"]
+        _salto["https://brazilianlumber.com" + a["path"]] = a["into"]
+
+for x in universo.values():
+    d = x.get("destino")
+    visto = set()
+    while d and d in _salto and d not in visto:
+        visto.add(d)
+        d = _salto[d]
+    x["destino"] = d
+
+
+# ------------------------------------------------------------ segunda pasada
+#
+# Las anclas y los parametros se resolvian contra la URL ANTIGUA, no contra su
+# destino. Es decir: /articulo/#seccion acababa apuntando a /articulo/, que en
+# el portal nuevo ya no existe porque los articulos viven en /guides/. Ahora,
+# con el universo completo, se resuelve cada una contra el destino real de su
+# pagina base.
+
+def _busca(u):
+    for k in (u, u.rstrip("/"), u.rstrip("/") + "/"):
+        if k in universo:
+            return universo[k]
+    return None
+
+
+ajustadas = 0
+for x in universo.values():
+    if x["accion"] not in ("ANCLA", "PARAMETRO", "ATRIBUTO"):
+        continue
+    base = x["url"].split("#")[0].split("?")[0]
+    padre = _busca(base)
+    if padre is None or padre is x:
+        continue
+    real = padre.get("destino")
+    if not real and padre["accion"] in ("CONSERVAR", "CONSERVAR-REESCRIBIR"):
+        real = padre["url"]
+    if real and real != x["destino"]:
+        x["destino"] = real
+        ajustadas += 1
+
+print("destinos de anclas y parametros corregidos contra su pagina base:", ajustadas)
 
 print("universo de URLs: {:,}  (rastreo {:,} + solo Search Console {:,})".format(
     len(universo), len(RAW), sueltas))
@@ -354,6 +417,7 @@ ACCION = {
     "ATRIBUTO": "Filtro de atributo",
     "DESCATALOGADO": "Producto descatalogado",
     "ANCLA": "Ancla de otra pagina",
+    "FICHERO": "Fichero: se migra tal cual",
     "REVISAR": "Necesita decision",
     "CONSERVAR": "Se mantiene",
     "CONSERVAR-REESCRIBIR": "Se mantiene, texto reescrito",
@@ -364,7 +428,7 @@ ACCION = {
 }
 COLOR_ACCION = {
     "PARAMETRO": CREMA, "ATRIBUTO": CREMA, "ANCLA": CREMA,
-    "DESCATALOGADO": AMBAR, "REVISAR": ROJO,
+    "DESCATALOGADO": AMBAR, "REVISAR": ROJO, "FICHERO": CREMA,
     "CONSERVAR": VERDE, "CONSERVAR-REESCRIBIR": VERDE,
     "CONSOLIDAR-301": AMBAR, "NOINDEX": CREMA, "NO-PUBLICO": CREMA, "ELIMINAR": ROJO,
 }
@@ -735,7 +799,13 @@ for a, b_, c_, d_ in decisiones:
 # ------------------------------------------------------------------ cerrar
 for ws in wb.worksheets:
     pintar(ws)
-wb.save(SALIDA)
+try:
+    wb.save(SALIDA)
+except PermissionError:
+    # El libro esta abierto en Excel. Se guarda al lado en vez de fallar.
+    SALIDA = SALIDA.with_name(SALIDA.stem + " (NUEVO)" + SALIDA.suffix)
+    wb.save(SALIDA)
+    print("AVISO: el Excel estaba abierto. Guardado como:", SALIDA.name)
 print("Excel: {}".format(SALIDA))
 print("hojas:", len(wb.worksheets))
 print("URLs en el mapa completo:", len(universo))
