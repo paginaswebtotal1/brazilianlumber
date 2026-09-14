@@ -52,7 +52,7 @@ Nada de esto rompe el prototipo, pero conviene resolverlo antes de la migracion 
 - `/thank-you/` Thank you!
 - `/demo-home/` Demo Home
 
-**3. Fichas sin fotografia (24 de 269).** El prototipo las muestra con una portada generada por color de especie. Hay que subir la foto real antes de publicar.
+**3. Fichas sin fotografia (0 de 269).** El prototipo las muestra con una portada generada por color de especie. Hay que subir la foto real antes de publicar.
 
 
 **4. Paginas absorbidas por la taxonomia (61).** Ocupaban la misma URL que un nodo de categoria; su contenido se fusiono dentro de la categoria.

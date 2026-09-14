@@ -448,8 +448,19 @@ def main():
             return None
         return IMGS.get("{}|{}".format(d["portal"], mid))
 
+    # Fotos rescatadas por p15: las fichas que no tenian foto destacada puesta
+    # en WooCommerce pero si imagenes en la galeria del producto, que el
+    # endpoint de core no expone.
+    try:
+        RESCATE = json.load(open(D / "fotos_rescatadas.json", encoding="utf-8"))
+    except FileNotFoundError:
+        RESCATE = {}
+
     for d in docs:
         f = foto(d)
+        if f is None and d["slug"] in RESCATE:
+            r = RESCATE[d["slug"]]
+            f = {"src": r["src"], "alt": r.get("alt") or d["titulo"], "w": None, "h": None}
         d["foto"] = f
         # La foto destacada manda; las del cuerpo quedan como galeria.
         cuerpo = [BODY[u] for u in d["imagenes"] if u in BODY]
