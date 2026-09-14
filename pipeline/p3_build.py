@@ -911,6 +911,94 @@ def main():
                     break
             r["to"] = destino
 
+    # Regla 14: dos paginas con el mismo titulo son la misma pagina. Se
+    # consolidan igual que se hizo con los productos. Gana la que mas clics
+    # tiene, y a igualdad, la de slug mas corto.
+    from collections import defaultdict as _dd
+    _t = _dd(list)
+    for pg in pages:
+        if pg.get("sub") == "junk" or pg.get("noindex"):
+            continue
+        _t[pg["title"].strip().lower()].append(pg)
+    _fus = []
+    for titulo, grupo in _t.items():
+        if len(grupo) < 2:
+            continue
+        grupo.sort(key=lambda x: (-(x.get("clicks") or 0), len(x["slug"])))
+        raiz = grupo[0]
+        for x in grupo[1:]:
+            _fus.append({"path": x["path"], "from": x["origins"], "into": raiz["path"]})
+            raiz["clicks"] = (raiz.get("clicks") or 0) + (x.get("clicks") or 0)
+            if not raiz.get("image") and x.get("image"):
+                raiz["image"] = x["image"]
+    if _fus:
+        _ids = {f["path"] for f in _fus}
+        pages = [x for x in pages if x["path"] not in _ids]
+        absorbed.extend(_fus)
+        print("paginas con el mismo titulo, consolidadas: {}".format(len(_fus)))
+
+    # Los temas del blog con menos de 3 articulos quedan en noindex. Mandar su
+    # URL antigua ahi es tirar el enlace: el usuario llega a algo que Google no
+    # va a mostrar. Su trafico va al indice de guias, que si se indexa.
+    _pc_noindex = {c["path"] for c in postcats if c.get("noindex")}
+    _ya = {r["from"].rstrip("/") for r in redirects}
+    _añadidas = 0
+    for c in postcats:
+        if not c.get("noindex"):
+            continue
+        for origen in (c.get("origins") or []):
+            if origen.rstrip("/") not in _ya:
+                redirects.append({"from": origen, "to": "/guides/",
+                                  "portal": "MIA", "type": "categories"})
+                _añadidas += 1
+    if _añadidas:
+        print("temas del blog en noindex, su URL antigua va a /guides/: {}".format(_añadidas))
+
+    # Regla 5: nada redirige a una pagina en noindex. Si el destino no se va a
+    # indexar, se sube a la seccion que si lo esta.
+    _noindex = {d["path"] for d in (posts + postcats + pages)
+                if d.get("noindex") or d.get("sub") == "junk"}
+    _vivos_idx = {d["path"] for d in (cats + products + posts + postcats + pages)
+                  if not (d.get("noindex") or d.get("sub") == "junk")}
+    _vivos_idx |= {"/", "/shop/", "/guides/"}
+
+    def _subir(ruta):
+        partes = [x for x in ruta.strip("/").split("/") if x]
+        for n in range(len(partes) - 1, 0, -1):
+            cand = "/" + "/".join(partes[:n]) + "/"
+            if cand in _vivos_idx:
+                return cand
+        return "/shop/" if ruta.startswith("/product") else "/"
+
+    # Las paginas de prueba y de "gracias" no son destino de nada: quien llegue
+    # ahi desde una URL antigua acaba en una pagina vacia. Van a la portada.
+    _basura = {d["path"] for d in pages if d.get("sub") == "junk"}
+    for r in redirects:
+        if r["to"] in _basura:
+            r["to"] = "/"
+    # Y las que no estan en el mapa porque el estudio las daba por conservadas,
+    # pero su destino resulto ser una de esas paginas de prueba.
+    _ya2 = {r["from"].rstrip("/") for r in redirects}
+    for rr in raw:
+        dest = path_of(rr["url_destino"]) if rr["url_destino"] else None
+        if dest in _basura and rr["url_origen"].rstrip("/") not in _ya2:
+            redirects.append({"from": rr["url_origen"], "to": "/",
+                              "portal": rr["portal"], "type": rr["tipo"]})
+    for a in absorbed:
+        if a["into"] in _basura:
+            a["into"] = "/"
+
+    _subidas = 0
+    for r in redirects:
+        if r["to"] in _noindex:
+            r["to"] = _subir(r["to"])
+            _subidas += 1
+    for a in absorbed:
+        if a["into"] in _noindex:
+            a["into"] = _subir(a["into"])
+    if _subidas:
+        print("redirecciones que apuntaban a noindex, reapuntadas: {}".format(_subidas))
+
     # La raiz de cada dominio, a la raiz. Esto va despues de construir la lista
     # y antes del encadenado, para que no lo pise ningun salto posterior.
     for r in redirects:

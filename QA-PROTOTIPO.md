@@ -7,14 +7,14 @@ Generado por `pipeline/p4_export.py` el 2026-09-13.
 | Concepto | Cantidad |
 |---|---|
 | URLs rastreadas en los 3 portales | 2197 |
-| URLs finales del portal unico | 779 |
+| URLs finales del portal unico | 770 |
 | Categorias de producto | 50 |
 | Fichas de producto | 269 |
 | Articulos del blog | 229 |
 | Categorias del blog | 70 |
-| Paginas | 161 |
-| De todas ellas, indexables | 711 |
-| Redirecciones 301 | 682 |
+| Paginas | 152 |
+| De todas ellas, indexables | 702 |
+| Redirecciones 301 | 741 |
 | URLs antiguas a noindex (etiquetas) | 722 |
 | Fichas con contenido reescrito | 97 |
 
@@ -55,7 +55,7 @@ Nada de esto rompe el prototipo, pero conviene resolverlo antes de la migracion 
 **3. Fichas sin fotografia (0 de 269).** El prototipo las muestra con una portada generada por color de especie. Hay que subir la foto real antes de publicar.
 
 
-**4. Paginas absorbidas por la taxonomia (61).** Ocupaban la misma URL que un nodo de categoria; su contenido se fusiono dentro de la categoria.
+**4. Paginas absorbidas por la taxonomia (70).** Ocupaban la misma URL que un nodo de categoria; su contenido se fusiono dentro de la categoria.
 
 - `/product/deckwise-stainless-steel-trim-head-screws-8x1-1-2-half-inches/` <- https://brazilianlumber.com/product/deckwise-stainless-steel-trim-head-screws-8x1-inches/
 - `/product/lowest-prices-deckwise-master-plug-kit/` <- https://brazilianlumber.com/product/deckwise-master-plug-kit/
@@ -83,9 +83,9 @@ Nada de esto rompe el prototipo, pero conviene resolverlo antes de la migracion 
 - `/product/garapa-tropical-hardwood-1x6-hot-deals/` <- https://brazilianlumberlosangeles.com/product/garapa-wood-1x6/
 - `/product/garapa-wood-wall-panels-5-4x6/` <- https://brazilianlumberlosangeles.com/product/garapa-wood-wall-panels-5-4x6-2/
 - `/product/prestige-collection-grand-grid-cladding-by-deckotech/` <- https://brazilianlumberlosangeles.com/product/prestige-collection-grand-grid-cladding-1x8-by-deckotech/
-- `/cart/` <- https://brazilianlumber.com/my-cart/
-- `/trend-guide/` <- https://brazilianlumber.com/download-or-digital-brochure/
-- `/trend-guide/` <- https://brazilianlumber.com/download-our-deck-preparation-checklist/
+- `/` <- https://brazilianlumber.com/my-cart/
+- `/` <- https://brazilianlumber.com/download-or-digital-brochure/
+- `/` <- https://brazilianlumber.com/download-our-deck-preparation-checklist/
 - `/locations/best-price-brazilian-lunber-los-angeles-ca/` <- https://brazilianlumbernewyork.com/best-price-brazilian-lunber-los-angeles-ca/
 - `/` <- https://brazilianlumber.com/
 - `/guides/` <- https://brazilianlumber.com/brazilian-lumber-blogs/
@@ -118,3 +118,12 @@ Nada de esto rompe el prototipo, pero conviene resolverlo antes de la migracion 
 - `/shop/` <- https://brazilianlumberlosangeles.com/new-shop/
 - `/guides/` <- https://brazilianlumberlosangeles.com/brazilian-lumber-los-angeles-blogs/
 - `/guides/` <- https://brazilianlumbernewyork.com/blogs/
+- `/brazilian-lumber/` <- https://brazilianlumberlosangeles.com/about-us/
+- `/wholesale-prices/` <- https://brazilianlumberlosangeles.com/wholesale/
+- `/ipe-decking-florida/` <- https://brazilianlumber.com/areas-we-serve/florida/
+- `/texas/` <- https://brazilianlumber.com/ipe-decking-texas/
+- `/thermo-woods-fl/` <- https://brazilianlumberlosangeles.com/thermo-woods-ca/
+- `/garapa-landing/` <- https://brazilianlumber.com/garapa-landing-2/
+- `/locations/ipe-decking-san-diego/` <- https://brazilianlumberlosangeles.com/ipe-decking-san-diego-ca/
+- `/composite-brands/` <- https://brazilianlumberlosangeles.com/composite-brands-la/
+- `/faq/` <- https://brazilianlumberlosangeles.com/faqs/

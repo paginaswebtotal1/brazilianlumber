@@ -269,6 +269,17 @@ for portal, datos in GSC["portales"].items():
         }
         sueltas += 1
 
+# El mapa de redirecciones ya corregido (encadenado, y sin apuntar a paginas en
+# noindex) manda sobre el destino original del estudio. Sin esto el Excel seguia
+# ensenando el destino viejo aunque el portal hiciera otra cosa.
+_red = {r["from"]: r["to"] for r in S["redirects"]}
+_red.update({k.rstrip("/"): v for k, v in list(_red.items())})
+for x in universo.values():
+    for k in (x["url"], x["url"].rstrip("/"), x["url"].rstrip("/") + "/"):
+        if k in _red:
+            x["destino"] = _red[k]
+            break
+
 # Las paginas consolidadas dentro de una categoria ya no existen. Todo lo que
 # tuviera como destino una de ellas tiene que saltar al destino final, o el
 # mapa mandaria trafico a una URL que se apago.
@@ -281,10 +292,25 @@ for a in S["absorbed"]:
 for x in universo.values():
     d = x.get("destino")
     visto = set()
+    salto_dado = False
     while d and d in _salto and d not in visto:
         visto.add(d)
         d = _salto[d]
+        salto_dado = True
     x["destino"] = d
+    # Si el destino ha saltado, la pagina YA NO se mantiene: se consolida. Sin
+    # esto la fila decia "Se mantiene" y a la vez apuntaba a otra URL, que es
+    # justo lo que no se puede leer en un mapa de migracion.
+    # Si el destino acaba siendo ella misma, la pagina se mantiene: da igual
+    # cuantos saltos haya dado por el camino. Es el caso de la portada.
+    _ra = (x["url"].replace("https://brazilianlumber.com", "") or "/").rstrip("/") + "/"
+    _rd = ((d or "").replace("https://brazilianlumber.com", "") or "/").rstrip("/") + "/"
+    if salto_dado and _ra == _rd:
+        salto_dado = False
+    if salto_dado and x["accion"] in ("CONSERVAR", "CONSERVAR-REESCRIBIR"):
+        x["accion"] = "CONSOLIDAR-301"
+        x["motivo"] = ("Su contenido se consolida dentro de {}: la pagina deja de existir "
+                       "como URL propia".format(d))
 
 
 # ------------------------------------------------------------ segunda pasada
@@ -318,6 +344,37 @@ for x in universo.values():
         ajustadas += 1
 
 print("destinos de anclas y parametros corregidos contra su pagina base:", ajustadas)
+
+# ------------------------------------------------------------ tercera pasada
+#
+# La etiqueta de la accion tiene que describir lo que le pasa a ESTA URL, no lo
+# que decidio el estudio sobre su contenido. Una pagina puede conservarse y aun
+# asi cambiar de direccion: /areas-we-serve/florida/orlando/ pasa a
+# /locations/orlando/. El contenido se mantiene, pero la URL vieja necesita su
+# 301 igual que cualquier otra. Decir "Se mantiene" en esa fila es enganoso
+# para quien tenga que configurar las redirecciones.
+
+def _ruta(u):
+    if not u:
+        return None
+    r = u.replace("https://brazilianlumber.com", "")
+    return (r if r.startswith("/") else None)
+
+
+_movidas = 0
+for x in universo.values():
+    if x["accion"] not in ("CONSERVAR", "CONSERVAR-REESCRIBIR"):
+        continue
+    ra, rd = _ruta(x["url"]), _ruta(x.get("destino"))
+    # Si la URL no es de brazilianlumber.com, cambia de dominio por definicion.
+    cambia = (rd is not None) and (ra is None or ra.rstrip("/") != rd.rstrip("/"))
+    if cambia:
+        x["accion"] = "CONSERVAR-MUEVE"
+        x["motivo"] = ("El contenido se mantiene pero cambia de direccion: la URL vieja "
+                       "necesita un 301 hacia {}".format(rd))
+        _movidas += 1
+
+print("filas reetiquetadas 'se mantiene pero cambia de URL':", _movidas)
 
 print("universo de URLs: {:,}  (rastreo {:,} + solo Search Console {:,})".format(
     len(universo), len(RAW), sueltas))
@@ -420,6 +477,7 @@ ACCION = {
     "FICHERO": "Fichero: se migra tal cual",
     "REVISAR": "Necesita decision",
     "CONSERVAR": "Se mantiene",
+    "CONSERVAR-MUEVE": "Se mantiene, cambia de URL",
     "CONSERVAR-REESCRIBIR": "Se mantiene, texto reescrito",
     "CONSOLIDAR-301": "Redirige a otra",
     "NOINDEX": "Deja de indexarse",
@@ -430,6 +488,7 @@ COLOR_ACCION = {
     "PARAMETRO": CREMA, "ATRIBUTO": CREMA, "ANCLA": CREMA,
     "DESCATALOGADO": AMBAR, "REVISAR": ROJO, "FICHERO": CREMA,
     "CONSERVAR": VERDE, "CONSERVAR-REESCRIBIR": VERDE,
+    "CONSERVAR-MUEVE": AMBAR,
     "CONSOLIDAR-301": AMBAR, "NOINDEX": CREMA, "NO-PUBLICO": CREMA, "ELIMINAR": ROJO,
 }
 
