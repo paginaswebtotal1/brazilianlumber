@@ -10,6 +10,7 @@ from taxonomia import ARBOL, MAP, ESPECIE
 from kb import ESPECIES, MARCAS, MEDIDAS, COLORES
 import contenido
 import contenido_paginas
+import ciudades as _ciu
 import medidas as _med
 
 D = Path(__file__).resolve().parent.parent / "data"
@@ -998,6 +999,137 @@ def main():
             a["into"] = _subir(a["into"])
     if _subidas:
         print("redirecciones que apuntaban a noindex, reapuntadas: {}".format(_subidas))
+
+    # ---- titulos de zona segun la demanda real
+    #
+    # Investigacion con KeywordTool sobre 82 ciudades y 12 formas de nombrar lo
+    # mismo. El resultado, sumando todas las ciudades:
+    #     lumber yard {ciudad}   8.590 busquedas/mes
+    #     lumber {ciudad}        7.230
+    #     ipe decking {ciudad}     140   <-- como se llamaban hasta ahora
+    # Se excluyen "deck builder" y "deck contractor" pese a tener volumen: son
+    # intencion de servicio y Brazilian Lumber suministra material.
+    try:
+        ZONAS_KW = json.load(open(D / "zonas_renombradas.json", encoding="utf-8"))
+    except FileNotFoundError:
+        ZONAS_KW = {}
+
+    # ---- paginas de zona que faltaban
+    #
+    # Cada ciudad con demanda medida tiene su URL bajo /locations/. Sin esto su
+    # trafico caia en el indice generico y se perdia la intencion local, que es
+    # justo lo que busca quien escribe "ipe decking santa monica".
+    _ya_loc = {pg["slug"] for pg in pages}
+    _gsc_por_slug = {}
+    try:
+        _g = json.load(open(D / "gsc.json", encoding="utf-8"))
+        for _p, _d in _g["portales"].items():
+            for _u, _m in _d["paginas"].items():
+                _sl = _u.rstrip("/").split("/")[-1]
+                _acc = _gsc_por_slug.setdefault(_sl, {"c": 0, "i": 0})
+                _acc["c"] += _m.get("clicks", 0)
+                _acc["i"] += _m.get("impressions", 0)
+    except FileNotFoundError:
+        pass
+
+    _nuevas = 0
+    for _slug, _info in _ciu.CIUDADES.items():
+        if _slug in _ya_loc:
+            continue
+        _m = _gsc_por_slug.get(_slug, {"c": 0, "i": 0})
+        # Se crea si la investigacion de palabras clave la justifica. Las
+        # impresiones de Search Console no bastan: vienen de consultas genericas
+        # donde la pagina sale de refilon, no de busquedas de esa ciudad.
+        if _slug not in ZONAS_KW:
+            continue
+        _nombre, _estado, _area, _terreno, _almacen = _info
+        _clave, _texto, _especies = _ciu.contexto(_terreno)
+        _kw = ZONAS_KW.get(_slug)
+        _h1 = _kw["h1"] if _kw else "Lumber Yard Serving {}".format(_nombre)
+        _intencion = _kw["intencion"] if _kw else "lumber yard"
+        _bl = [
+            {"t": "p", "text":
+                "Brazilian Lumber is the {} serving {}, {}. Hardwood and composite decking, "
+                "cladding, fencing and dimensional lumber, held in stock and cut to length "
+                "before it ships from our {} yard.".format(
+                    _intencion, _nombre, _area, _almacen)},
+            {"t": "h2", "text": "What {} does to a deck".format(_clave)},
+            {"t": "p", "text": _texto},
+            {"t": "h2", "text": "What gets specified in {}".format(_nombre)},
+            {"t": "p", "text":
+                "The three materials that come up most in {} are {}. If you are choosing "
+                "between them, ask for samples first: screen color is not wood color, and grain "
+                "reads completely differently at full size.".format(
+                    _nombre, contenido.unir(_especies))},
+            {"t": "h2", "text": "Delivery to {}".format(_nombre)},
+            {"t": "list", "items": [
+                "Shipped from the {} yard, the closest of our three.".format(_almacen),
+                "Cut to length in our own mill, so you are not paying freight on offcuts.",
+                "Lead time and freight quoted together with the material, never added later.",
+                "{} sits in {}; tell us the delivery access and we size the truck to "
+                "it.".format(_nombre, _area),
+            ]},
+        ]
+        pages.append({
+            "kind": "page", "sub": "location", "path": "/locations/{}/".format(_slug),
+            "slug": _slug,
+            "title": "{} | {}".format(_h1, _estado),
+            "h1": _h1,
+            "blocks": _bl,
+            "description": ("{} serving {}, {}. Tropical hardwood and composite decking, "
+                            "cladding and dimensional lumber in stock, cut to length and "
+                            "shipped from our {} yard.".format(
+                                _h1.split(" in ")[0], _nombre, _area, _almacen)),
+            "image": None, "gallery": [], "words": 0,
+            "clicks": _m["c"], "impressions": _m["i"],
+            "modified": "2026-09-14", "origins": [], "noindex": False, "color": "#4c5a66",
+        })
+        _nuevas += 1
+    if _nuevas:
+        print("paginas de zona creadas con contenido local propio: {}".format(_nuevas))
+
+    # Las paginas de zona que ya existian tambien se renombran: se llamaban
+    # "IPE decking Los Angeles", que es el termino con menos demanda de todos.
+    _renombradas = 0
+    for pg in pages:
+        if pg.get("sub") != "location":
+            continue
+        _kw = ZONAS_KW.get(pg["slug"])
+        if not _kw or pg["h1"] == _kw["h1"]:
+            continue
+        pg["h1"] = _kw["h1"]
+        pg["title"] = _kw["h1"]
+        _renombradas += 1
+    if _renombradas:
+        print("paginas de zona renombradas por su termino real: {}".format(_renombradas))
+
+    # Paginas de ciudad: ninguna redirige a otra ciudad.
+    #
+    # El mapa heredado mandaba 134 paginas de ciudad a /altadena/, que tiene
+    # cero clics. Quien busca tarima en Santa Monica no quiere Altadena.
+    _por_slug = {}
+    for pg in pages:
+        # Si hay varias con el mismo slug, gana la de /locations/, que es la
+        # ruta canonica de una pagina de zona.
+        if pg["slug"] not in _por_slug or pg["path"].startswith("/locations/"):
+            _por_slug[pg["slug"]] = pg["path"]
+    _indice_zonas = _por_slug.get("areas-we-serve", "/")
+
+    _ciudades = 0
+    for r in redirects:
+        destino = r["to"].strip("/").split("/")[-1]
+        origen_slug = r["from"].rstrip("/").split("/")[-1]
+        # Solo actua cuando el destino es una pagina de ciudad distinta del origen.
+        if destino and destino != origen_slug and r["to"] in {v for v in _por_slug.values()}:
+            pg_destino = next((x for x in pages if x["path"] == r["to"]), None)
+            if pg_destino is not None and pg_destino.get("sub") == "location":
+                propia = _por_slug.get(origen_slug)
+                nuevo = propia if propia else _indice_zonas
+                if nuevo != r["to"]:
+                    r["to"] = nuevo
+                    _ciudades += 1
+    if _ciudades:
+        print("paginas de ciudad reapuntadas (ya no van todas a una sola): {}".format(_ciudades))
 
     # La raiz de cada dominio, a la raiz. Esto va despues de construir la lista
     # y antes del encadenado, para que no lo pise ningun salto posterior.

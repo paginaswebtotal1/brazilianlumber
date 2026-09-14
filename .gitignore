@@ -27,3 +27,5 @@ data/duplicados.json
 data/validacion_gsc.json
 data/fotos_rescatadas.json
 data/coherencia.json
+data/keywords_zonas.json
+data/zonas_renombradas.json
