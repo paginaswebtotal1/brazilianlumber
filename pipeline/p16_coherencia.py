@@ -150,6 +150,21 @@ for p, d in docs.items():
         fallos["13. Ruta con caracteres no limpios"].append(
             {"url": p, "accion": "", "destino": "", "clics": 0, "nota": ""})
 
+# 16. Toda pagina de zona vive en /locations/. Dos rutas para el mismo tipo de
+#     pagina es lo que hacia que /fresno/ y /locations/san-diego/ coexistieran.
+for p, d in docs.items():
+    if d.get("sub") == "location" and not p.startswith("/locations/"):
+        fallos["16. Pagina de zona fuera de /locations/"].append(
+            {"url": p, "accion": "", "destino": "", "clics": d.get("clicks") or 0, "nota": ""})
+
+# 17. El titulo de una zona tiene que decir que es, no solo el nombre del sitio.
+for p, d in docs.items():
+    if d.get("sub") == "location" and not any(
+            w in d.get("h1", "") for w in ("Lumber", "Decking", "Hardwood")):
+        fallos["17. Zona cuyo titulo no dice que es"].append(
+            {"url": p, "accion": "", "destino": d.get("h1", ""), "clics": d.get("clicks") or 0,
+             "nota": ""})
+
 # 14. Dos paginas distintas con el mismo titulo: candidatas a duplicado.
 por_titulo = defaultdict(list)
 for p, d in docs.items():
@@ -171,7 +186,7 @@ for x in universo.values():
 def main():
     total = sum(len(v) for v in fallos.values())
     print("=" * 66)
-    print("  {:,} URLs revisadas contra 15 reglas de coherencia".format(len(universo)))
+    print("  {:,} URLs revisadas contra 17 reglas de coherencia".format(len(universo)))
     print("  {} incumplimientos".format(total))
     print("=" * 66)
     print()

@@ -11,6 +11,11 @@ from kb import ESPECIES, MARCAS, MEDIDAS, COLORES
 import contenido
 import contenido_paginas
 import ciudades as _ciu
+
+
+def _es_ciudad_conocida(slug):
+    """Una ciudad real de la tabla de datos locales."""
+    return slug in _ciu.CIUDADES
 import medidas as _med
 
 D = Path(__file__).resolve().parent.parent / "data"
@@ -402,6 +407,50 @@ def gen_pagina(d):
 
 
 # ---------------- main ----------------
+
+def _clasificar_tema(slug, titulo):
+    """Un tema del blog que habla de un material que vendemos va a su categoria.
+
+    No se usa el clasificador del catalogo: ese esta hecho para fichas, y con
+    un tema como "gap spacing" o "forest management" acaba inventando una
+    categoria. Aqui solo se acepta una coincidencia clara de material.
+    """
+    import re as _re
+    b = (slug + " " + (titulo or "")).lower().replace("-", " ")
+    ESPECIES_TEMA = {
+        "massaranduba": "decking/tropical-hardwood/massaranduba",
+        "ipe": "decking/tropical-hardwood/ipe",
+        "cumaru": "decking/tropical-hardwood/cumaru",
+        "garapa": "decking/tropical-hardwood/garapa",
+        "jatoba": "decking/tropical-hardwood/jatoba",
+        "brazilian chestnut": "decking/tropical-hardwood/jatoba",
+        "tiger wood": "decking/tropical-hardwood/tigerwood",
+        "tigerwood": "decking/tropical-hardwood/tigerwood",
+        "teak": "lumber/domestic-hardwood",
+        "sapele": "lumber/domestic-hardwood",
+        "cedar": "lumber/softwood",
+        "softwood": "lumber/softwood",
+        "live edge slab": "slabs",
+        "slab": "slabs",
+        "artificial ivy": "landscaping/artificial-ivy",
+        "artificial turf": "landscaping/artificial-turf",
+        "decking oil": "accessories/finishes-sealers",
+        "decking fastener": "accessories/fasteners",
+        "decking tool": "accessories/tools",
+        "railing": "accessories/railing-cable",
+        "wall panel": "cladding-siding/wood-wall-panels",
+        "pergola": "lumber/tropical-hardwood",
+        "composite decking": "decking/composite",
+        "thermally modified": "decking/thermally-modified",
+    }
+    for clave in sorted(ESPECIES_TEMA, key=len, reverse=True):
+        if _re.search(r"\b" + _re.escape(clave), b):
+            ruta = ESPECIES_TEMA[clave]
+            if ruta in ARBOL:
+                return "/" + ruta + "/"
+    return None
+
+
 def main():
     docs = json.load(open(D / "classified.json", encoding="utf-8"))
     raw = json.load(open(D / "raw.json", encoding="utf-8"))
@@ -952,19 +1001,46 @@ def main():
     # Los temas del blog con menos de 3 articulos quedan en noindex. Mandar su
     # URL antigua ahi es tirar el enlace: el usuario llega a algo que Google no
     # va a mostrar. Su trafico va al indice de guias, que si se indexa.
-    _pc_noindex = {c["path"] for c in postcats if c.get("noindex")}
     _ya = {r["from"].rstrip("/") for r in redirects}
-    _añadidas = 0
+
+    def _destino_tema(c):
+        """El sitio mas cercano al que mandar un tema que no se indexa."""
+        mios = [p for p in posts if c["path"] in (p.get("cats") or [])]
+        # 2. uno o dos articulos: el articulo es el contenido
+        if 1 <= len(mios) <= 2:
+            mejor = max(mios, key=lambda p: p.get("clicks") or 0)
+            return mejor["path"]
+        # 3. una categoria de producto que hable de lo mismo
+        slug = c["slug"]
+        if slug in MAP and MAP[slug] in ARBOL:
+            return "/" + MAP[slug] + "/"
+        try:
+            ruta = _clasificar_tema(slug, c["title"])
+            if ruta:
+                return ruta
+        except Exception:
+            pass
+        # 4. el indice
+        return "/guides/"
+
+    _reparto = {"articulo": 0, "categoria": 0, "indice": 0}
     for c in postcats:
         if not c.get("noindex"):
             continue
+        destino = _destino_tema(c)
+        if destino.startswith("/guides/") and destino != "/guides/":
+            _reparto["articulo"] += 1
+        elif destino == "/guides/":
+            _reparto["indice"] += 1
+        else:
+            _reparto["categoria"] += 1
         for origen in (c.get("origins") or []):
             if origen.rstrip("/") not in _ya:
-                redirects.append({"from": origen, "to": "/guides/",
+                redirects.append({"from": origen, "to": destino,
                                   "portal": "MIA", "type": "categories"})
-                _añadidas += 1
-    if _añadidas:
-        print("temas del blog en noindex, su URL antigua va a /guides/: {}".format(_añadidas))
+    print("temas del blog sin indexar, repartidos: {} al articulo, {} a su categoria "
+          "de producto, {} al indice".format(_reparto["articulo"], _reparto["categoria"],
+                                             _reparto["indice"]))
 
     # Regla 5: nada redirige a una pagina en noindex. Si el destino no se va a
     # indexar, se sube a la seccion que si lo esta.
@@ -1011,6 +1087,67 @@ def main():
     if _subidas:
         print("redirecciones que apuntaban a noindex, reapuntadas: {}".format(_subidas))
 
+    # ---- una sola ruta para las paginas de zona
+    #
+    # Son geografia real: ciudades, condados, estados y regiones que la empresa
+    # sirve. Todo lo demas que estaba marcado como zona es en realidad una
+    # landing de producto con el nombre de un sitio detras.
+    GEOGRAFIA = {
+        # Florida
+        "miami", "fort-lauderdale", "fort-myers", "boca-raton", "palm-beach",
+        "coconut-grove", "coral-gables", "naples", "orlando", "tampa",
+        "jacksonville", "key-west", "wellington", "florida",
+        # Georgia y las Carolinas
+        "atlanta", "savannah", "milton", "johns-creek", "berkeley-lake", "georgia",
+        "charleston", "columbia", "beaufort", "south-carolina",
+        # Texas
+        "houston", "dallas-fort-worth", "austin", "san-antonio", "el-paso",
+        "corpus-christi", "galveston", "san-marcos", "texas",
+        # California
+        "los-angeles", "san-diego", "san-francisco", "san-jose", "sacramento",
+        "fresno", "anaheim", "santa-barbara", "altadena", "california",
+        # noreste
+        "new-york", "new-jersey", "long-island", "albany", "buffalo",
+        "rochester-syracuse",
+        # Caribe
+        "bahamas", "islands-of-the-caribbean",
+    }
+
+    _movidas, _reclasificadas = [], 0
+    _por_ruta = {pg["path"]: pg for pg in pages}
+
+    for pg in list(pages):
+        if pg.get("sub") != "location":
+            continue
+        slug = pg["slug"]
+        if slug not in GEOGRAFIA and not _es_ciudad_conocida(slug):
+            # No es una zona: es una landing de producto.
+            pg["sub"] = "landing"
+            _reclasificadas += 1
+            continue
+        destino = "/locations/{}/".format(slug)
+        if pg["path"] == destino:
+            continue
+        if destino in _por_ruta:
+            # Ya existe la de /locations/: esta se consolida dentro.
+            _movidas.append({"path": pg["path"], "from": pg["origins"], "into": destino})
+            g = _por_ruta[destino]
+            g["clicks"] = (g.get("clicks") or 0) + (pg.get("clicks") or 0)
+            if not g.get("image") and pg.get("image"):
+                g["image"] = pg["image"]
+            pages.remove(pg)
+        else:
+            # Se mueve, y su URL antigua queda documentada.
+            _movidas.append({"path": pg["path"], "from": pg["origins"], "into": destino})
+            pg["path"] = destino
+            _por_ruta[destino] = pg
+
+    if _movidas:
+        absorbed.extend(_movidas)
+        print("paginas de zona unificadas bajo /locations/: {}".format(len(_movidas)))
+    if _reclasificadas:
+        print("paginas que no eran zona, reclasificadas como landing: {}".format(_reclasificadas))
+
     # ---- titulos de zona segun la demanda real
     #
     # Investigacion con KeywordTool sobre 82 ciudades y 12 formas de nombrar lo
@@ -1020,10 +1157,12 @@ def main():
     #     ipe decking {ciudad}     140   <-- como se llamaban hasta ahora
     # Se excluyen "deck builder" y "deck contractor" pese a tener volumen: son
     # intencion de servicio y Brazilian Lumber suministra material.
-    try:
-        ZONAS_KW = json.load(open(D / "zonas_renombradas.json", encoding="utf-8"))
-    except FileNotFoundError:
-        ZONAS_KW = {}
+    ZONAS_KW = {}
+    for _f in ("zonas_renombradas.json", "zonas_extra.json"):
+        try:
+            ZONAS_KW.update(json.load(open(D / _f, encoding="utf-8")))
+        except FileNotFoundError:
+            pass
 
     # ---- paginas de zona que faltaban
     #
@@ -1106,10 +1245,19 @@ def main():
         if pg.get("sub") != "location":
             continue
         _kw = ZONAS_KW.get(pg["slug"])
-        if not _kw or pg["h1"] == _kw["h1"]:
+        if _kw:
+            nuevo_h1 = _kw["h1"]
+        elif "Lumber" in pg["h1"] or "Decking" in pg["h1"]:
             continue
-        pg["h1"] = _kw["h1"]
-        pg["title"] = _kw["h1"]
+        else:
+            # Sin demanda medida, pero el titulo tiene que decir que es. Una
+            # pagina que solo pone "Palm Beach" no le dice nada ni al usuario
+            # ni a un buscador.
+            nuevo_h1 = "Lumber Yard Serving {}".format(pg["h1"])
+        if pg["h1"] == nuevo_h1:
+            continue
+        pg["h1"] = nuevo_h1
+        pg["title"] = nuevo_h1
         _renombradas += 1
     if _renombradas:
         print("paginas de zona renombradas por su termino real: {}".format(_renombradas))
@@ -1126,8 +1274,22 @@ def main():
             _por_slug[pg["slug"]] = pg["path"]
     _indice_zonas = _por_slug.get("areas-we-serve", "/")
 
+    # El destino puede seguir apuntando a la ruta que tenia ANTES de unificar
+    # las zonas bajo /locations/. Se resuelve primero contra las consolidaciones
+    # ya registradas; si no, se compara contra rutas que ya no existen y la
+    # correccion no se aplica. Fue lo que dejo /fresno/ apuntando a Altadena.
+    _salto_zonas = {a["path"]: a["into"] for a in absorbed if a["path"] != a["into"]}
+
+    def _resuelto(ruta):
+        visto = set()
+        while ruta in _salto_zonas and ruta not in visto:
+            visto.add(ruta)
+            ruta = _salto_zonas[ruta]
+        return ruta
+
     _ciudades = 0
     for r in redirects:
+        r["to"] = _resuelto(r["to"])
         destino = r["to"].strip("/").split("/")[-1]
         origen_slug = r["from"].rstrip("/").split("/")[-1]
         # Solo actua cuando el destino es una pagina de ciudad distinta del origen.
@@ -1210,6 +1372,44 @@ def main():
                       "items": [{"path": p["path"], "title": p["title"]} for p in locs[:40]]},
         "company": company,
     }
+
+    # ---- resolucion final de cadenas
+    #
+    # La primera pasada corre antes de unificar las zonas bajo /locations/, asi
+    # que no puede ver esos saltos. Esta va al final, cuando ya estan todas las
+    # consolidaciones registradas, y es la que garantiza que ninguna redireccion
+    # muere en una URL que se apago. Fue lo que dejo /ipe-decking-texas/
+    # apuntando a /texas/ despues de que /texas/ pasara a /locations/texas/.
+    _vivos_fin = {d["path"] for d in (cats + products + posts + postcats + pages)}
+    _vivos_fin |= {"/", "/shop/", "/guides/", "/search/", "/redirect-map/"}
+    _salto_fin = {a["path"]: a["into"] for a in absorbed if a["path"] != a["into"]}
+
+    def _final(ruta):
+        visto = set()
+        while ruta in _salto_fin and ruta not in visto:
+            visto.add(ruta)
+            ruta = _salto_fin[ruta]
+        return ruta
+
+    _arregladas = 0
+    for a in absorbed:
+        nuevo_into = _final(a["into"])
+        if nuevo_into != a["into"]:
+            a["into"] = nuevo_into
+            _arregladas += 1
+    for r in redirects:
+        nuevo_to = _final(r["to"])
+        if nuevo_to != r["to"]:
+            r["to"] = nuevo_to
+            _arregladas += 1
+    if _arregladas:
+        print("cadenas resueltas en la pasada final: {}".format(_arregladas))
+
+    _huerfanas = [r for r in redirects if r["to"] not in _vivos_fin]
+    if _huerfanas:
+        print("AVISO: {} redirecciones siguen sin destino vivo".format(len(_huerfanas)))
+        for r in _huerfanas[:5]:
+            print("   {} -> {}".format(r["from"][:60], r["to"]))
 
     site = {
         "generated": "2026-09-13",

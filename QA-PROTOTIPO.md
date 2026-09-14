@@ -14,7 +14,7 @@ Generado por `pipeline/p4_export.py` el 2026-09-13.
 | Categorias del blog | 70 |
 | Paginas | 180 |
 | De todas ellas, indexables | 730 |
-| Redirecciones 301 | 741 |
+| Redirecciones 301 | 776 |
 | URLs antiguas a noindex (etiquetas) | 722 |
 | Fichas con contenido reescrito | 97 |
 
@@ -55,7 +55,7 @@ Nada de esto rompe el prototipo, pero conviene resolverlo antes de la migracion 
 **3. Fichas sin fotografia (0 de 269).** El prototipo las muestra con una portada generada por color de especie. Hay que subir la foto real antes de publicar.
 
 
-**4. Paginas absorbidas por la taxonomia (70).** Ocupaban la misma URL que un nodo de categoria; su contenido se fusiono dentro de la categoria.
+**4. Paginas absorbidas por la taxonomia (105).** Ocupaban la misma URL que un nodo de categoria; su contenido se fusiono dentro de la categoria.
 
 - `/product/deckwise-stainless-steel-trim-head-screws-8x1-1-2-half-inches/` <- https://brazilianlumber.com/product/deckwise-stainless-steel-trim-head-screws-8x1-inches/
 - `/product/lowest-prices-deckwise-master-plug-kit/` <- https://brazilianlumber.com/product/deckwise-master-plug-kit/
@@ -121,9 +121,44 @@ Nada de esto rompe el prototipo, pero conviene resolverlo antes de la migracion 
 - `/brazilian-lumber/` <- https://brazilianlumberlosangeles.com/about-us/
 - `/wholesale-prices/` <- https://brazilianlumberlosangeles.com/wholesale/
 - `/ipe-decking-florida/` <- https://brazilianlumber.com/areas-we-serve/florida/
-- `/texas/` <- https://brazilianlumber.com/ipe-decking-texas/
+- `/locations/texas/` <- https://brazilianlumber.com/ipe-decking-texas/
 - `/thermo-woods-fl/` <- https://brazilianlumberlosangeles.com/thermo-woods-ca/
 - `/garapa-landing/` <- https://brazilianlumber.com/garapa-landing-2/
 - `/locations/ipe-decking-san-diego/` <- https://brazilianlumberlosangeles.com/ipe-decking-san-diego-ca/
 - `/composite-brands/` <- https://brazilianlumberlosangeles.com/composite-brands-la/
 - `/faq/` <- https://brazilianlumberlosangeles.com/faqs/
+- `/locations/fort-myers/` <- https://brazilianlumber.com/areas-we-serve/florida/fort-myers/
+- `/locations/jacksonville/` <- https://brazilianlumber.com/areas-we-serve/florida/jacksonville/
+- `/locations/key-west/` <- https://brazilianlumber.com/areas-we-serve/florida/key-west/
+- `/locations/wellington/` <- https://brazilianlumber.com/areas-we-serve/florida/wellington/
+- `/locations/georgia/` <- https://brazilianlumber.com/areas-we-serve/georgia/
+- `/locations/south-carolina/` <- https://brazilianlumber.com/areas-we-serve/south-carolina/
+- `/locations/savannah/` <- https://brazilianlumber.com/areas-we-serve/georgia/savannah/
+- `/locations/berkeley-lake/` <- https://brazilianlumber.com/areas-we-serve/georgia/berkeley-lake/
+- `/locations/milton/` <- https://brazilianlumber.com/areas-we-serve/georgia/milton/
+- `/locations/johns-creek/` <- https://brazilianlumber.com/areas-we-serve/georgia/johns-creek/
+- `/locations/columbia/` <- https://brazilianlumber.com/areas-we-serve/south-carolina/columbia/
+- `/locations/beaufort/` <- https://brazilianlumber.com/areas-we-serve/south-carolina/beaufort/
+- `/locations/charleston/` <- https://brazilianlumber.com/areas-we-serve/south-carolina/charleston/
+- `/locations/texas/` <- https://brazilianlumber.com/areas-we-serve/texas/
+- `/locations/houston/` <- https://brazilianlumber.com/areas-we-serve/texas/houston/
+- `/locations/austin/` <- https://brazilianlumber.com/areas-we-serve/texas/austin/
+- `/locations/dallas-fort-worth/` <- https://brazilianlumber.com/areas-we-serve/texas/dallas-fort-worth/
+- `/locations/san-antonio/` <- https://brazilianlumber.com/areas-we-serve/texas/san-antonio/
+- `/locations/el-paso/` <- https://brazilianlumber.com/areas-we-serve/texas/el-paso/
+- `/locations/galveston/` <- https://brazilianlumber.com/areas-we-serve/texas/galveston/
+- `/locations/corpus-christi/` <- https://brazilianlumber.com/areas-we-serve/texas/corpus-christi/
+- `/locations/san-marcos/` <- https://brazilianlumber.com/areas-we-serve/texas/san-marcos/
+- `/locations/buffalo/` <- https://brazilianlumber.com/areas-we-serve/new-york/buffalo/
+- `/locations/albany/` <- https://brazilianlumber.com/areas-we-serve/new-york/albany/
+- `/locations/rochester-syracuse/` <- https://brazilianlumber.com/areas-we-serve/new-york/rochester-syracuse/
+- `/locations/long-island/` <- https://brazilianlumber.com/areas-we-serve/new-york/long-island/
+- `/locations/california/` <- https://brazilianlumber.com/areas-we-serve/california/
+- `/locations/san-jose/` <- https://brazilianlumber.com/areas-we-serve/california/san-jose/
+- `/locations/santa-barbara/` <- https://brazilianlumber.com/areas-we-serve/california/santa-barbara/
+- `/locations/fresno/` <- https://brazilianlumber.com/areas-we-serve/california/fresno/
+- `/locations/coconut-grove/` <- https://brazilianlumber.com/areas-we-serve/florida/coconut-grove/
+- `/locations/coral-gables/` <- https://brazilianlumber.com/areas-we-serve/florida/coral-gables/
+- `/locations/bahamas/` <- https://brazilianlumber.com/areas-we-serve/islands-of-the-caribbean/bahamas/
+- `/locations/islands-of-the-caribbean/` <- https://brazilianlumber.com/areas-we-serve/islands-of-the-caribbean/
+- `/locations/altadena/` <- https://brazilianlumberlosangeles.com/altadena/
