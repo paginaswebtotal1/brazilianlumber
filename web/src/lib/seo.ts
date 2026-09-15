@@ -13,7 +13,26 @@ import type { Doc } from "./data";
 
 export const INDEXABLE = process.env.NEXT_PUBLIC_INDEXABLE === "true";
 
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+/**
+ * La URL con la que el sitio se nombra a sí mismo: canonicals, sitemap, Open
+ * Graph y los @id del JSON-LD.
+ *
+ * Sin esto, en Vercel salían canonicals apuntando a `http://localhost:3000`,
+ * porque `NEXT_PUBLIC_SITE_URL` solo está definida en el `.env.local` de
+ * desarrollo y en producción no existía. En local no se veía: en local ESA es
+ * la respuesta correcta.
+ *
+ * Vercel inyecta su dominio de producción por su cuenta, así que se usa como
+ * respaldo y el prototipo se nombra bien esté donde esté, sin depender de que
+ * alguien se acuerde de configurar una variable en el panel.
+ */
+const VERCEL = process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL
+  || process.env.NEXT_PUBLIC_VERCEL_URL;
+
+export const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL
+  || (VERCEL ? `https://${VERCEL}` : "http://localhost:3000")
+).replace(/\/$/, "");
 
 /** Dominio definitivo del portal unificado, el que llevan los canonicals reales. */
 export const CANONICAL_HOST = "https://brazilianlumber.com";
