@@ -113,6 +113,48 @@ Detalles que lo hacen útil de verdad:
 
 ---
 
+## La propuesta de keywords, aplicada
+
+El 3 de septiembre de 2026 Felipe pidió por escrito que la estrategia dejara de dar por hecho que el cliente conoce el nombre de la especie. El **archivo 11** de `ARQUITECTURA WEB BL/MENÙ VISUAL` mide esa demanda; `p23_seo.py` la aplica al portal. Qué cambia en el sitio:
+
+| Cambio | Alcance |
+|---|---|
+| Título y meta escritos desde el término que de verdad se busca, con su volumen medido | Las 797 URLs |
+| Metas reescritas porque no contenían la keyword de la página | 64 |
+| Títulos desempatados para que no haya dos iguales en el portal | 38 |
+| Párrafo que explica la equivalencia comercial y la diferencia botánica | 10 especies |
+| H1 que lidera con el nombre comercial donde ese nombre gana en volumen | Jatoba, Red Balau |
+| Etiqueta del menú con el nombre por el que se busca | 2 |
+
+**La regla, en una línea:** manda el término con más volumen. `brazilian cherry` mide 1.600 búsquedas/mes y `jatoba` 1.300, así que la categoría titula «Brazilian Cherry Decking (Jatoba)» y el menú dice «Brazilian Cherry (Jatoba)». Donde gana el botánico —Ipe, Cumaru, Garapa, Tigerwood— el título no se toca y el nombre comercial entra en el cuerpo.
+
+**Ninguna página afirma una especie que no es.** Cada una lleva el párrafo que lo aclara con el nombre botánico delante: Jatoba es *Hymenaea courbaril*, no cerezo; Red Balau es *Shorea*, no *Swietenia*, y la página lo dice con esas palabras. Era una condición explícita del correo.
+
+**Red Balau / Batu no tiene surtido.** `philippine mahogany` mide 720 búsquedas/mes, el doble que `red balau`, y en los tres portales no hay ni una ficha: lo único que existía era una landing heredada de Los Ángeles. Se ha reescrito como `/batu/`, con el contenido que captura esa búsqueda y explica la diferencia técnica, y **queda pendiente la decisión de negocio** de darle surtido y convertirla en categoría. Crear la categoría vacía repetiría el problema de las 3 categorías sin producto.
+
+## La capa GEO: que nos citen los motores generativos
+
+Un motor generativo no cita páginas, cita **pasajes**, y solo puede citar lo que se sostiene solo. `p24_geo.py` aplica eso a las 797 URLs:
+
+| Cambio | Alcance |
+|---|---|
+| **Bloque de respuesta** de 35 a 70 palabras, con cifras, al principio de la página | **426 URLs** |
+| Preguntas medidas contestadas con dato propio, dentro del FAQ | 17 |
+| **Tablas comparativas** — el formato más citado, ~33 % de las citas | 10 |
+| Cifras unificadas contra un solo origen (`kb.ESPECIES`) | 37 |
+| Afirmaciones de fuego matizadas | 32 |
+| Entidades con `alternateName` en el JSON-LD | 12 |
+| Fecha de revisión y autoría visibles | 797 |
+| `llms.txt` publicado | 8 KB |
+
+Así queda la página de Ipe, y es lo que un motor puede citar entero sin leer nada más:
+
+> Ipe is a tropical hardwood used for exterior decking, cladding and dimensional lumber. It rates 3,680 lbf on the Janka hardness scale, weighs about 1,100 kg/m3 air dried, and lasts 50+ years outdoors with no chemical treatment. It is also sold as Brazilian Walnut. Brazilian Lumber stocks 34 Ipe items in Miami, Los Angeles and New Jersey.
+
+Va con la clase `answer-block`, que es a la que apunta `speakable` en el JSON-LD.
+
+**Tres arreglos que hicieron falta antes.** Las cifras Janka no coincidían entre páginas (3.510 contra 3.680 para el mismo Ipe): un motor que lea las dos versiones descarta las dos, así que ahora hay un solo origen. **99 páginas afirmaban un `Class A fire rating` sin respaldo**, que es justo lo que Felipe advirtió por escrito; las 32 menciones activas ahora dicen que es un resultado ASTM E84 de la especie ensayada, no una certificación de un tablón concreto. Y `robots.txt` solo permitía cuatro robots de IA: ahora lista los catorce que importan, uno a uno, porque **si uno está bloqueado ese motor no puede citarnos** por bueno que sea el contenido.
+
 ## SEO y GEO
 
 Implementado y verificable, con el interruptor de indexación en **off**:
@@ -144,6 +186,7 @@ cd pipeline
 python p1_extract.py    # limpia el contenido de los 3 portales
 python p2_classify.py   # clasifica los 295 productos en la taxonomía
 python p3_build.py      # genera el contenido único y el menú
+python p23_seo.py       # aplica la propuesta de keywords: títulos, metas, nombres comerciales
 python p4_export.py     # índice de búsqueda, SQL de Supabase, informe de QA
 python p5_check.py      # comprueba las 844 URLs contra el servidor local
 ```
@@ -185,6 +228,8 @@ BL-PORTAL-UNICO/
 │   ├── p2_classify.py        a que categoria va cada ficha
 │   ├── p18_renombrar_zonas.py como se llama cada pagina de zona
 │   ├── p3_build.py           contenido unico, menu, relacionados, redirecciones
+│   ├── p22_demanda.py        cruza la demanda medida contra las 797 URLs
+│   ├── p23_seo.py            titulos, metas y nombres comerciales por demanda
 │   ├── p4_export.py          indice de busqueda, esquema SQL, informe de QA
 │   │
 │   ├─ IMAGENES Y FICHEROS

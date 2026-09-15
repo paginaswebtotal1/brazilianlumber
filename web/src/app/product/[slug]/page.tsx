@@ -117,7 +117,7 @@ export default async function ProductPage({ params }: Params) {
           </ul>
 
           <div className="mt-6">
-            <Blocks blocks={doc.blocks} />
+            <Blocks blocks={doc.blocks} answer={doc.answerBlock} />
           </div>
 
           {doc.specs && doc.specs.length > 0 && (

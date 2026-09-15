@@ -67,7 +67,7 @@ export default async function CatchAll({ params }: Params) {
               {doc.h1 ?? doc.title}
             </h1>
             <div className="mt-4">
-              <Blocks blocks={doc.blocks} />
+              <Blocks blocks={doc.blocks} answer={doc.answerBlock} />
             </div>
           </div>
           {doc.image && (
@@ -148,7 +148,7 @@ export default async function CatchAll({ params }: Params) {
           </div>
         )}
         <div className="mt-6">
-          <Blocks blocks={doc.blocks} />
+          <Blocks blocks={doc.blocks} answer={doc.answerBlock} />
         </div>
 
         {doc.sub === "location" && (

@@ -63,6 +63,23 @@ export interface Doc {
   date?: string;
   words?: number;
   postCount?: number;
+  // demanda medida (p23_seo.py, a partir del mapa de demanda del archivo 11)
+  seoTitle?: string;
+  seoDescription?: string;
+  kwPrimary?: string | null;
+  kwVolume?: number | null;
+  kwSecondary?: string[] | null;
+  kwLayer?: string;
+  kwCluster?: number | null;
+  kwCount?: number | null;
+  kwSource?: string;
+  alsoKnownAs?: string[];
+  navLabel?: string;
+  // capa GEO/AEO (p24_geo.py): lo que hace la pagina citable por un motor generativo
+  answerBlock?: string;
+  queryHeadings?: string[];
+  reviewed?: string;
+  reviewedBy?: string;
 }
 
 interface Site {

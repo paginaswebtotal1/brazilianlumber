@@ -231,3 +231,15 @@ body {
     transform: none;
   }
 }
+
+/* Bloque de respuesta de la capa GEO: el pasaje que un motor generativo debe
+   citar. Se marca visualmente porque tambien es lo primero que quiere leer una
+   persona que llega buscando un dato concreto. */
+.prose-bl .answer-block {
+  border-left: 3px solid var(--color-bark-400, #8a7053);
+  background: var(--color-bark-50, #faf7f3);
+  padding: 0.9rem 1.1rem;
+  border-radius: 0 var(--radius-card, 10px) var(--radius-card, 10px) 0;
+  font-size: 15px;
+  line-height: 1.6;
+}

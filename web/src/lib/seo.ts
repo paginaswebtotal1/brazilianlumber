@@ -61,7 +61,16 @@ export function canonical(path: string): string {
   return absolute(path);
 }
 
+/**
+ * Título de la página.
+ *
+ * Si el documento trae `seoTitle`, ese manda: lo escribe `p23_seo.py` a partir
+ * del término que de verdad se busca, con su volumen mensual medido, y ya viene
+ * recortado a 60 caracteres y desempatado contra el resto del portal. El resto
+ * es el respaldo de siempre, por si un documento llega sin pasar por ese paso.
+ */
 export function titleFor(doc: Doc): string {
+  if (doc.seoTitle) return doc.seoTitle;
   const t = doc.title?.trim() || doc.slug.replace(/-/g, " ");
   switch (doc.kind) {
     case "product":
@@ -78,6 +87,7 @@ export function titleFor(doc: Doc): string {
 }
 
 export function descriptionFor(doc: Doc): string {
+  if (doc.seoDescription) return doc.seoDescription.slice(0, 158);
   const d = (doc.description || "").replace(/\s+/g, " ").trim();
   if (d.length >= 70) return d.slice(0, 158);
   const body = doc.blocks.find((b) => b.t === "p" && "text" in b) as { text: string } | undefined;
@@ -126,6 +136,12 @@ export function orgSchema(): Json {
     url: SITE_URL,
     description:
       "Supplier of tropical hardwood decking, composite decking, cladding and dimensional lumber, with yards in Miami, Los Angeles and New Jersey.",
+    foundingDate: "2006",
+    knowsAbout: [
+      "tropical hardwood decking", "Ipe", "Cumaru", "Garapa", "Jatoba", "Tigerwood",
+      "Massaranduba", "Red Balau", "thermally modified wood", "composite decking",
+      "PVC decking", "wood cladding", "rainscreen siding", "dimensional lumber",
+    ],
     areaServed: "US",
     location: [
       { "@type": "Place", name: "Miami yard", address: { "@type": "PostalAddress", addressLocality: "Miami", addressRegion: "FL", addressCountry: "US" } },
@@ -157,8 +173,10 @@ export function productSchema(doc: Doc): Json {
     "@type": "Product",
     "@id": `${absolute(doc.path)}#product`,
     name: doc.title,
+    alternateName: doc.alsoKnownAs?.length ? doc.alsoKnownAs : undefined,
     description: descriptionFor(doc),
     url: absolute(doc.path),
+    speakable: doc.answerBlock ? SPEAKABLE : undefined,
     image: doc.gallery?.length ? doc.gallery : undefined,
     category: doc.categoryTitle,
     brand: { "@type": "Brand", name: doc.attrs?.marca ? String(doc.attrs.marca) : BRAND },
@@ -186,6 +204,7 @@ export function articleSchema(doc: Doc): Json {
     dateModified: doc.modified || doc.date,
     author: { "@type": "Organization", name: BRAND },
     publisher: { "@id": `${SITE_URL}/#organization` },
+    speakable: doc.answerBlock ? SPEAKABLE : undefined,
     wordCount: doc.words || undefined,
   };
 }
@@ -201,13 +220,30 @@ export function faqSchema(faq: { q: string; a: string }[]): Json {
   };
 }
 
+/**
+ * Bloque de respuesta destacado.
+ *
+ * Los motores generativos no citan paginas, citan pasajes. `speakable` marca
+ * cual es el pasaje que contesta la consulta, y `alternateName` le dice al motor
+ * que 'Brazilian cherry' y 'Jatoba' son la misma entidad: sin eso, una pregunta
+ * por el nombre comercial no encuentra la pagina del nombre botanico.
+ */
+const SPEAKABLE = {
+  "@type": "SpeakableSpecification",
+  cssSelector: [".answer-block", "h1"],
+};
+
 export function collectionSchema(doc: Doc, items: Doc[]): Json {
   return {
     "@type": "CollectionPage",
     "@id": `${absolute(doc.path)}#collection`,
     name: doc.title,
+    alternateName: doc.alsoKnownAs?.length ? doc.alsoKnownAs : undefined,
     description: descriptionFor(doc),
     url: absolute(doc.path),
+    dateModified: doc.reviewed || doc.modified || undefined,
+    speakable: doc.answerBlock ? SPEAKABLE : undefined,
+    abstract: doc.answerBlock || undefined,
     mainEntity: {
       "@type": "ItemList",
       numberOfItems: items.length,

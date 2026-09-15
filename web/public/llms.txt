@@ -1,0 +1,103 @@
+# Brazilian Lumber
+
+> Supplier of tropical hardwood decking, composite and PVC decking, cladding, siding and dimensional lumber, with yards in Miami (FL), Los Angeles (CA) and New Jersey. Founded 2006. Stock is real and quoted per linear or square foot.
+
+Species we stock, with published Janka hardness, density and expected service life on each page. Trade names are given alongside the botanical name because the market searches both: Ipe is sold as Brazilian walnut, Cumaru as Brazilian teak, Jatoba as Brazilian cherry, Massaranduba as Brazilian redwood or bulletwood, and Red Balau (Batu) under Philippine mahogany terminology. None of these is the species the trade name borrows from, and every page says so.
+
+Last reviewed: 2026-09-15
+
+## Species data
+
+- **Ipe** (also sold as Brazilian Walnut): 3,680 lbf Janka, 1,100 kg/m3, 50+ years untreated. deep olive-brown with fine, tight grain
+- **Cumaru** (also sold as Brazilian Teak): 3,540 lbf Janka, 1,085 kg/m3, 30+ years untreated. warm golden to reddish brown with interlocked grain
+- **Massaranduba** (also sold as Brazilian Redwood / Bulletwood): 3,190 lbf Janka, 1,100 kg/m3, 30+ years untreated. deep red that ages to a rich russet
+- **Jatoba** (also sold as Brazilian Cherry): 2,350 lbf Janka, 910 kg/m3, 25+ years untreated. salmon red to orange-brown darkening to a deep russet
+- **Tigerwood** (also sold as Brazilian Koa): 1,850 lbf Janka, 855 kg/m3, 25+ years untreated. orange-brown with dramatic dark striping
+- **Garapa** (also sold as Brazilian Oak): 1,650 lbf Janka, 830 kg/m3, 20+ years untreated. pale golden yellow that silvers evenly
+- **Piquia** (also sold as White Ironwood): 1,700 lbf Janka, 800 kg/m3, 20+ years untreated. light yellowish to grayish brown
+- **Teak**: 1,070 lbf Janka, 655 kg/m3, 40+ years untreated. golden brown with a naturally oily surface
+- **Western Red Cedar**: 350 lbf Janka, 370 kg/m3, 15+ years untreated. reddish brown with pale sapwood
+- **California Redwood**: 450 lbf Janka, 420 kg/m3, 20+ years untreated. rich reddish brown
+- **Thermo Ayous** (also sold as Thermo Ayous): 700 lbf Janka, 500 kg/m3, 25+ years untreated. uniform warm caramel brown through the full thickness
+- **Bamboo**: 3,000 lbf Janka, 1,150 kg/m3, 20+ years. carbonized amber to natural straw
+
+## Catalog
+
+- [Softwood Lumber](/lumber/softwood/): 7 products
+- [Domestic Hardwood Lumber](/lumber/domestic-hardwood/): 7 products
+- [Wood Wall Panels](/cladding-siding/wood-wall-panels/): 10 products
+- [Composite Decking](/decking/composite/): 70 products
+- [Trex Composite Decking](/decking/composite/trex/): 31 products
+- [Tropical Hardwood Decking](/decking/tropical-hardwood/): 96 products
+- [Decking](/decking/): 189 products
+- [Solid Hardwood Flooring](/flooring/solid-hardwood/): 1 products
+- [Cladding and Siding](/cladding-siding/): 29 products
+- [Battens and Louvers](/cladding-siding/battens-louvers/): 2 products
+- [Landscaping](/landscaping/): 9 products
+- [Fencing and Gates](/fencing-gates/): 3 products
+- [TimberTech Composite Decking](/decking/composite/timbertech/): 7 products
+- [Ipe Decking](/decking/tropical-hardwood/ipe/): 34 products
+- [Hidden Fasteners and Screws](/accessories/fasteners/): 15 products
+- [Deck Tiles](/decking/deck-tiles/): 3 products
+- [Composite Cladding](/cladding-siding/composite/): 17 products
+- [DeckoTech Composite Decking](/decking/composite/deckotech/): 15 products
+- [Cleaning and Maintenance](/accessories/maintenance/): 9 products
+- [Dimensional Lumber](/lumber/): 52 products
+- [Railing and Cable Systems](/accessories/railing-cable/): 9 products
+- [Cumaru Decking](/decking/tropical-hardwood/cumaru/): 34 products
+- [Finishes, Oils and Sealers](/accessories/finishes-sealers/): 18 products
+- [AZEK Decking](/decking/composite/azek/): 7 products
+- [Composite Fencing](/fencing-gates/composite/): 2 products
+- [Thermally Modified Decking](/decking/thermally-modified/): 17 products
+- [Live Edge Slabs](/slabs/): 4 products
+- [Jatoba Decking](/decking/tropical-hardwood/jatoba/): 5 products
+- [Tigerwood Decking](/decking/tropical-hardwood/tigerwood/): 5 products
+- [PVC Decking](/decking/pvc/): 31 products
+- [MoistureShield Decking](/decking/composite/moistureshield/): 1 products
+- [Garapa Decking](/decking/tropical-hardwood/garapa/): 9 products
+- [Thermo Ayous Decking](/decking/thermally-modified/ayous/): 8 products
+- [Armadillo Decking](/decking/composite/armadillo/): 9 products
+- [NewTechWood Decking](/decking/composite/newtechwood/): 1 products
+- [Massaranduba Decking](/decking/tropical-hardwood/massaranduba/): 2 products
+- [Bamboo Decking](/decking/bamboo/): 1 products
+- [Artificial Ivy](/landscaping/artificial-ivy/): 5 products
+- [Zuri Decking](/decking/composite/zuri/): 1 products
+- [Tropical Hardwood Lumber](/lumber/tropical-hardwood/): 38 products
+
+## Guides
+
+- [Comparing Cypress VS Cedar: Which is Right for Your Decking Needs?](/guides/comparing-cypress-vs-cedar/)
+- [Choosing The Best Wood For Raised Garden Beds](/guides/best-woods-for-raised-garden-beds/)
+- [How to Install PVC Trim: A Step-by-Step Guide](/guides/how-to-install-pvc-trim/)
+- [Which TimberTech-AZEK Decking Collection Costs the Most?](/guides/which-azek-decking-collection-costs-the-most/)
+- [Does Cypress Wood Rot? Here Is the Answer](/guides/does-cypress-wood-rot/)
+- [The Best Weather Resistant Woods for Outdoor Projects](/guides/best-weather-resistant-woods/)
+- [How to Clean Wood Paneling Walls?](/guides/how-to-clean-wood-paneling-walls/)
+- [6 Outstanding Facts That Make Tigerwood Stand Out From The Crowd](/guides/facts-that-make-tigerwood-stand-out/)
+- [Can Outdoor Rugs Cause Damage to Decks?](/guides/can-outdoor-rugs-cause-damage-to-decks/)
+- [How To Seal Hardwood Floors](/guides/how-to-seal-hardwood-floors/)
+- [Top 5 Of The Best Hardwoods For Building Beach Houses](/guides/hardwoods-for-beach-houses/)
+- [The World's 11 Most Amazing Wood Structures](/guides/amazing-wood-structures/)
+- [The 4 Wood Grades Most Commonly Used In The Industry](/guides/the-4-wood-grades-most-used/)
+- [How Thick is 5/4 Decking?](/guides/how-thick-is-5-4-decking/)
+- [Best 5 Rot-resistant Hardwoods For Outdoor Construction](/guides/rot-resistant-hardwoods/)
+- [Can You Paint Trex Decking?](/guides/can-you-paint-trex-decking/)
+- [Top 5 Brazilian Hardwood Species for Building Your Dream Deck](/guides/5-brazilian-hardwood-species-for-decks/)
+- [What is Softwood? Species, Origin, Qualities, and Best Uses](/guides/what-is-softwood/)
+- [Top 3 Best Woods for Ceilings](/guides/top-3-best-woods-for-ceilings/)
+- [5 Beautiful Freestanding Deck Ideas](/guides/5-freestanding-deck-ideas/)
+- [Brazilian Wood in Home Design: Integrating Beauty and Durability](/guides/brazilian-wood-in-home-design/)
+- [Cypress Wood: Top 5 Features That Make It an Excellent Choice](/guides/cypress-wood-top-5-features/)
+- [Top 5 Softest Woods for Woodworking](/guides/5-softest-woods-for-woodworking/)
+- [15 Wood Deck Ideas For A Stunning Patio](/guides/15-wood-deck-ideas/)
+- [Why Brazilian Wood is the Perfect Choice for Outdoor Decking](/guides/why-brazilian-wood-for-outdoor-decking/)
+
+## Where we deliver
+
+- Orlando, Naples, Fort Myers, Jacksonville, Palm Beach, Tampa, Key West, Wellington, Boca Raton, Georgia, South Carolina, Savannah, Berkeley Lake, Milton, Johns Creek, Columbia, Beaufort, Atlanta, Charleston, Texas, Houston, Austin, Dallas Fort Worth, San Antonio, El Paso, Galveston, Corpus Christi, San Marcos, Buffalo, New York, Albany, Rochester & Syracuse, Long Island, California, San Diego, San Jose, San Francisco, Sacramento, Santa Barbara, Fresno, Anaheim, Fort Lauderdale, Coconut Grove, Coral Gables, Bahamas, Islands of the Caribbean, Los Angeles, Miami, Altadena, New Jersey, Santa Monica | CA, Malibu | CA, Long Beach | CA, Huntington Beach | CA, Laguna Beach | CA, Costa Mesa | CA, Oxnard | CA, Carpinteria | CA, Chula Vista | CA, Hollywood | CA
+
+## Contact
+
+- [Request a quote](/request-a-quote/)
+- [Request samples](/request-samples/)
+- [Contact](/brazilian-lumber-contact/)

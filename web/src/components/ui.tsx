@@ -30,7 +30,12 @@ export function Breadcrumbs({ items }: { items: { path: string; title: string }[
   );
 }
 
-export function Blocks({ blocks }: { blocks: Block[] }) {
+/**
+ * `answer` marca el parrafo que contesta la consulta de la pagina. Va con la
+ * clase `answer-block`, que es a la que apunta `speakable` en el JSON-LD: es
+ * como se le dice a un motor generativo "si vas a citar algo, cita esto".
+ */
+export function Blocks({ blocks, answer }: { blocks: Block[]; answer?: string }) {
   return (
     <div className="prose-bl">
       {blocks.map((b, i) => {
@@ -91,6 +96,13 @@ export function Blocks({ blocks }: { blocks: Block[] }) {
         if (b.t === "h2") return <h2 key={i}>{b.text}</h2>;
         if (b.t === "h3") return <h3 key={i}>{b.text}</h3>;
         if (b.t === "h4") return <h4 key={i}>{b.text}</h4>;
+        if (answer && b.text === answer) {
+          return (
+            <p key={i} className="answer-block">
+              {b.text}
+            </p>
+          );
+        }
         return <p key={i}>{b.text}</p>;
       })}
     </div>

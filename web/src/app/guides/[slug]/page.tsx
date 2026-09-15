@@ -44,7 +44,7 @@ export default async function GuidePage({ params }: Params) {
             {doc.h1 ?? doc.title}
           </h1>
           <div className="mt-4">
-            <Blocks blocks={doc.blocks} />
+            <Blocks blocks={doc.blocks} answer={doc.answerBlock} />
           </div>
         </header>
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -99,7 +99,7 @@ export default async function GuidePage({ params }: Params) {
         )}
 
         <div className="mt-7">
-          <Blocks blocks={doc.blocks} />
+          <Blocks blocks={doc.blocks} answer={doc.answerBlock} />
         </div>
 
         {doc.catNames && doc.catNames.length > 0 && (

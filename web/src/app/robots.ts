@@ -38,8 +38,27 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
       // Los rastreadores de citación de IA sí entran: la visibilidad en motores
-      // generativos es un objetivo explícito del proyecto.
-      { userAgent: ["GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended", "CCBot"], allow: "/" },
+      // generativos es un objetivo explícito del proyecto. Si uno de estos está
+      // bloqueado, ese motor no puede citarnos aunque el contenido sea el mejor.
+      //
+      // Se listan uno a uno y no con un comodín porque cada plataforma usa un
+      // agente distinto para buscar y para entrenar, y no son la misma decisión.
+      {
+        userAgent: [
+          "GPTBot", "OAI-SearchBot", "ChatGPT-User",   // OpenAI
+          "ClaudeBot", "anthropic-ai", "Claude-Web",   // Anthropic
+          "PerplexityBot", "Perplexity-User",          // Perplexity
+          "Google-Extended",                           // Gemini y AI Overviews
+          "Bingbot", "BingPreview",                    // Copilot
+          "Applebot-Extended",                         // Apple Intelligence
+          "Amazonbot", "Bytespider", "meta-externalagent",
+        ],
+        allow: "/",
+      },
+      // CCBot (Common Crawl) es de entrenamiento, no de citación: permitirlo no
+      // nos hace aparecer en ninguna respuesta. Se deja abierto porque alimenta
+      // los corpus públicos, pero es una decisión de negocio, no técnica.
+      { userAgent: "CCBot", allow: "/" },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,
