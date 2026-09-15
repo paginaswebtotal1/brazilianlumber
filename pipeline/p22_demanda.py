@@ -11,7 +11,9 @@ import json, re, csv, unicodedata, collections, os
 
 MENU = "C:\\Users\\USER\\Desktop\\BRAZILIAN LUMBER\\ARQUITECTURA WEB BL\\MEN\u00d9 VISUAL"
 DATA = "C:\\Users\\USER\\Desktop\\BL-PORTAL-UNICO\\data"
-SCR  = os.path.join(MENU, "5 - SCRIPTS Y DATOS")
+# Los datos extraidos viven en su propia subcarpeta desde la ordenacion del
+# 15 de septiembre. Los scripts estan en "2 - MAPA DE DEMANDA (archivo 11)".
+SCR  = os.path.join(MENU, "5 - SCRIPTS Y DATOS", "3 - DATOS EXTRAIDOS")
 XL10 = os.path.join(MENU, "10 - MAPA COMPLETO DE LA UNIFICACION.xlsx")
 
 def norm(s):
