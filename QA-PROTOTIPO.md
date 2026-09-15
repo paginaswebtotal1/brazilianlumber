@@ -1,6 +1,6 @@
 # Control de calidad del prototipo
 
-Generado por `pipeline/p4_export.py` el 2026-09-13.
+Generado por `pipeline/p4_export.py` el 2026-09-14.
 
 ## Cifras
 

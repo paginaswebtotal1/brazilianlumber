@@ -8,7 +8,9 @@ from concurrent.futures import ThreadPoolExecutor
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError, URLError
 
-BASE = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:3456"
+# El puerto por defecto de `npm start`. Con el puerto equivocado esto no falla:
+# devuelve 0 en las 803 URLs y parece que el portal entero esta caido.
+BASE = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:3000"
 D = Path(__file__).resolve().parent.parent / "data"
 S = json.load(open(D / "site.json", encoding="utf-8"))
 COLL = ("categories", "products", "posts", "postcats", "pages")

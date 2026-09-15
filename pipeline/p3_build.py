@@ -1448,7 +1448,7 @@ def main():
             print("   {} -> {}".format(r["from"][:60], r["to"]))
 
     site = {
-        "generated": "2026-09-13",
+        "generated": "2026-09-14",
         "host": HOST,
         "nav": nav, "absorbed": absorbed,
         "categories": cats, "products": products, "posts": posts,

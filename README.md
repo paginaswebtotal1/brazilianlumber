@@ -2,7 +2,7 @@
 
 Maqueta funcional del portal que sustituye a **brazilianlumber.com**, **brazilianlumberlosangeles.com** y **brazilianlumbernewyork.com**.
 
-No es una presentación ni un mockup: es el sitio construido, navegable y con las **838 URLs finales** publicadas, cada una con su contenido, su canonical, sus migas de pan y su marcado de datos estructurados.
+No es una presentación ni un mockup: es el sitio construido, navegable y con las **797 URLs finales** publicadas, cada una con su contenido, su canonical, sus migas de pan y su marcado de datos estructurados.
 
 > **Aviso.** Es un prototipo interno. Está bloqueado a todos los buscadores (`robots.txt`, `<meta robots>` y cabecera `X-Robots-Tag`) porque reproduce el contenido de tres dominios que siguen vivos. Si Google lo indexara, Brazilian Lumber competiría contra sí misma por duplicado.
 
@@ -27,17 +27,17 @@ No se ha inventado nada. Todo viene del trabajo que ya estaba hecho en `ARQUITEC
 | Concepto | Cantidad |
 |---|---|
 | URLs rastreadas en los 3 portales | 2.197 |
-| **URLs únicas en el portal nuevo** | **838** |
+| **URLs únicas en el portal nuevo** | **797** |
 | Categorías de producto | 50 |
-| Fichas de producto | 295 |
+| Fichas de producto | 268 |
 | Artículos del blog | 229 |
 | Temas del blog | 70 |
-| Páginas (institucionales, ciudad, campaña) | 194 |
-| Equivalencias de URL documentadas | 622 |
+| Páginas (institucionales, ciudad, campaña) | 180 |
+| Equivalencias de URL documentadas | **1.505** |
 | URLs de etiqueta que pasan a noindex | 722 |
-| Fichas con contenido reescrito por duplicidad | 109 |
+| Fichas con contenido reescrito por duplicidad | 97 |
 
-Comprobado automáticamente en cada build (`pipeline/p5_check.py`, 844 URLs):
+Comprobado automáticamente en cada build (`pipeline/p5_check.py`, 803 URLs):
 
 ```
 no 200          : 0
@@ -70,7 +70,7 @@ SIN noindex     : 0
 El mapa de qué dirección antigua corresponde a cuál nueva está en tres sitios, con el mismo contenido:
 
 - La hoja **08** del Excel `8 - CONSOLIDACION - MAPA DE URLS UNICAS.xlsx`
-- `data/redirect-map.csv`, listo para el desarrollador
+- `data/redirect-map.csv`, listo para el desarrollador (lo genera `pipeline/p21_redirect_map.py`)
 - **`/redirect-map/`** dentro del propio prototipo: tabla filtrable, para responder en la reunión sin abrir el Excel
 
 De las 622 equivalencias, 71 salen de brazilianlumber.com y 551 de los dos dominios que se apagan. Esas 551 se configuran en el hosting de cada dominio el día de la migración, no aquí.
@@ -150,6 +150,8 @@ python p5_check.py      # comprueba las 844 URLs contra el servidor local
 
 Supabase es opcional y está documentado en `docs/SUPABASE.md`.
 
+Por qué cada ficha acaba donde acaba — y por qué dejó de acabar en `/accessories/` — está en `docs/CLASIFICACION.md`.
+
 ---
 
 ## Qué falta antes de que esto sea el sitio real
@@ -165,23 +167,61 @@ Está todo en **`QA-PROTOTIPO.md`**, generado automáticamente. En resumen:
 
 ## Estructura
 
+El pipeline va numerado por orden de ejecucion. Los ficheros sin numero son datos de
+apoyo que consumen varios pasos.
+
 ```
 BL-PORTAL-UNICO/
-├── pipeline/            Python. Extrae, clasifica, genera y comprueba
-│   ├── p1_extract.py    limpia el HTML de WordPress y los shortcodes
-│   ├── p2_classify.py   clasifica productos por slug, título y contenido
-│   ├── p3_build.py      genera el contenido único, el menú y los relacionados
-│   ├── p4_export.py     índice de búsqueda, esquema SQL, informe de QA
-│   ├── p5_check.py      comprueba las 844 URLs y el SEO de cada una
-│   ├── kb.py            base de conocimiento: 23 especies y 12 marcas
-│   └── taxonomia.py     el árbol de destino acordado (copia de la carpeta 8)
-├── data/                dataset generado, CSV del mapa, esquema SQL
-├── web/                 la aplicación Next.js
-│   ├── src/app/         rutas
-│   ├── src/components/  interfaz
-│   ├── src/lib/         datos, SEO, Supabase
+├── pipeline/                 Python. Extrae, clasifica, genera, comprueba
+│   │
+│   ├─ EXTRACCION
+│   ├── p1_extract.py         limpia el HTML de WordPress y los shortcodes
+│   ├── p1b_woo.py            categoria, etiquetas y atributos reales de la tienda
+│   ├── p9_gsc.py             clics e impresiones via API de Search Console
+│   ├── p17_keywords_zonas.py demanda por ciudad via API de KeywordTool
+│   ├── p20_descubrir_zonas.py mercados con demanda y sin pagina
+│   │
+│   ├─ CONSTRUCCION
+│   ├── p2_classify.py        a que categoria va cada ficha
+│   ├── p18_renombrar_zonas.py como se llama cada pagina de zona
+│   ├── p3_build.py           contenido unico, menu, relacionados, redirecciones
+│   ├── p4_export.py          indice de busqueda, esquema SQL, informe de QA
+│   │
+│   ├─ IMAGENES Y FICHEROS
+│   ├── p6_images.py p7_download.py p8_body_images.py
+│   ├── p11_ficheros.py       biblioteca de medios, conservando su ruta
+│   ├── p15_fotos_faltantes.py
+│   │
+│   ├─ ENTREGABLES
+│   ├── p10_excel.py          el Excel de 13 hojas que contesta a direccion
+│   ├── p21_redirect_map.py   el CSV de redirecciones para el desarrollador
+│   │
+│   ├─ VERIFICACION  (ninguna es opcional)
+│   ├── p5_check.py           las 803 URLs y el SEO de cada una
+│   ├── p12_auditoria.py      destinos: sin caidas, sin cadenas, sin bucles
+│   ├── p13_duplicados.py     contenido duplicado, origen contra destino
+│   ├── p14_validar_gsc.py    toda URL de Search Console tiene destino vivo
+│   ├── p16_coherencia.py     17 reglas de coherencia sobre las 6.169 URLs
+│   ├── p19_excel_vs_portal.py el Excel contra el portal, fila por fila
+│   │
+│   └─ DATOS DE APOYO
+│       ├── taxonomia.py      el arbol de destino acordado (copia de la carpeta 8)
+│       ├── woo.py            resuelve atributos y etiquetas con datos de la tienda
+│       ├── kb.py             23 especies y 12 marcas: Janka, densidad, vida util
+│       ├── medidas.py        cobertura y peso por medida
+│       ├── ciudades.py       terreno, condado y almacen de cada zona
+│       └── contenido.py contenido_paginas.py
+├── data/                     dataset generado, CSV del mapa, esquema SQL
+├── web/                      la aplicacion Next.js
+│   ├── src/app/              rutas
+│   ├── src/components/       interfaz
+│   ├── src/lib/              datos, SEO, Supabase
 │   └── supabase-schema.sql
 ├── docs/
-├── QA-PROTOTIPO.md      informe de control de calidad
+│   ├── DECISIONES.md         por que esta hecho asi
+│   ├── CLASIFICACION.md      por que cada ficha acaba donde acaba
+│   ├── DESPLIEGUE.md         como publicarlo
+│   └── SUPABASE.md           como conectar la base de datos
+├── QA-PROTOTIPO.md           informe de control de calidad, regenerado en cada build
 └── README.md
 ```
