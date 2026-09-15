@@ -193,6 +193,19 @@ def put(kw, vol, fuente, url=None, extra=None):
         ASIG[url].append(d)
     return d
 
+# Ambiguedades que la matriz original no marcaba y el dato nuevo destapa.
+# 'batu' mide 1.600 en Semrush, pero batu es "piedra" en malayo y una ciudad de
+# Indonesia: esas busquedas no son de madera. Si la dejamos encabezar, la pagina
+# titula por un termino que no nos trae a nadie. Mismo criterio que 'pergola'.
+# Solo entran los que significan otra cosa FUERA de nuestro sector. Un termino
+# generico como 'flooring' o 'tools' es ambiguo a escala nacional pero es
+# exactamente el correcto para su propia categoria, asi que no se toca.
+AMBIGUAS_PROPIAS = {
+    "batu",    # "piedra" en malayo, y una ciudad de Indonesia
+    "earth", "blog", "trees",   # temas de blog heredados, sin intencion comercial
+    "balau",   # sin calificar, devuelve resultados de Indonesia
+}
+
 # 5a. la matriz de 400 que ya vio Felipe
 for m in matrix:
     n = a_nueva(m["url"])
@@ -349,7 +362,13 @@ RUTAS = [
     (r"\bdeck (stain|sealer|oil|cleaner)|\bwood (stain|sealer|oil)\b|\bbrighten",
                                                  "/accessories/finishes-sealers/"),
     (r"\bengineered (hardwood |wood )?floor",    "/flooring/engineered/"),
-    (r"\bsolid hardwood floor|\bhardwood floor",  "/flooring/solid-hardwood/"),
+    (r"^solid hardwood floor",                   "/flooring/solid-hardwood/"),
+    # el termino generico va al padre, no a una de sus ramas: 'hardwood
+    # flooring' son 90.500/mes y describe la categoria entera, no solo la maciza
+    (r"^hardwood floor|^wood floor|^flooring$",  "/flooring/"),
+    (r"decking tool|deck tool",              "/accessories/tools/"),
+    (r"pedestal|substructure|joist tape", "/accessories/substructure/"),
+    (r"deck(ing)? accessor",                   "/accessories/"),
     (r"\bfaux wood|\bfake wood|\bimitation wood|\bsynthetic wood|\bplastic wood|"
      r"\bcomposite wood deck|\bwood composite deck", "/decking/composite/"),
     (r"\bpressure treated\b|\bpt wood\b|\btreated wood deck", "/lumber/softwood/"),
@@ -451,6 +470,9 @@ CORRECCIONES = [
     (r"\bteak deck|\bteak wood deck",          "/decking/tropical-hardwood/cumaru/"),
     (r"\bfastener|\bhidden clip|\bdeck screw", "/accessories/fasteners/"),
     (r"\bengineered (hardwood |wood )?floor",  "/flooring/engineered/"),
+    (r"^hardwood flooring$|^wood flooring$",   "/flooring/"),
+    (r"^solid hardwood flooring$",             "/flooring/solid-hardwood/"),
+    (r"^decking tools?$|^deck tools?$",        "/accessories/tools/"),
 ]
 for pat, destino in CORRECCIONES:
     rx = re.compile(pat)
@@ -471,6 +493,10 @@ def sube(path, visto=None):
         if ASIG.get(cur): return cur
         cur = PADRE.get(cur)
     return None
+
+for _k in AMBIGUAS_PROPIAS:
+    if _k in KW: KW[_k]["ambigua"] = "SI"
+
 
 def orden_kw(d):
     """Ordena por volumen, pero una keyword de intencion ambigua nunca encabeza.

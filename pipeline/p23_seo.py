@@ -289,8 +289,12 @@ def main():
                      "the Brazilian Lumber technical team, last reviewed September 15, 2026."),
         ]
         batu["answerBlock"] = batu["blocks"][0]["text"]
-        batu["kwPrimary"] = "philippine mahogany"
-        batu["kwVolume"] = 720
+        # el volumen sale del dato, no se escribe a mano: Google Ads mide
+        # 'philippine mahogany' en 1.000 al mes, no en las 720 que traia la
+        # matriz de septiembre
+        _b = FIN.get("/batu/", {})
+        batu["kwPrimary"] = _b.get("kw_principal") or "philippine mahogany"
+        batu["kwVolume"] = _b.get("vol_principal") or None
         batu["kwLayer"] = DEM.CAPA_EN[3]
         cambios["pagina de Red Balau reescrita"] += 1
 
