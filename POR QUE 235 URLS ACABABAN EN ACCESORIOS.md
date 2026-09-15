@@ -56,15 +56,17 @@ tres portales y ahora:
 
 | | Antes | Ahora |
 |---|---:|---:|
-| URLs que acaban en `/accessories/` | 235 | **14** |
+| URLs que acaban en `/accessories/` | 235 | **22** |
 | Fichas sin subcategoria propia | 11 | **0** |
 | Redirecciones documentadas | 776 | **1.505** |
 | Clics en URLs que desaparecen sin destino | 357 | **0** |
 | Categorias del menu sin producto | 3 | **3** (las mismas, y son decision de negocio) |
 
-Las 14 que quedan en `/accessories/` si son accesorios: la propia categoria antigua
-"Decking Accessories" con su paginacion, y las etiquetas de marca DeckWise, que abarcan
-tornilleria, aceites y mantenimiento a la vez.
+Las 22 que quedan en `/accessories/` si son accesorios, y estan en los tres portales: la
+propia categoria antigua "Decking Accessories" con su paginacion, y las etiquetas
+`deckwise`, `deck-wise`, `deck-maintenance` y `deck-and-wood-brightener`, que abarcan
+tornilleria, aceites y mantenimiento a la vez, asi que su sitio es la raiz de accesorios
+y no una subcategoria.
 
 ## Efecto de rebote: se llenaron categorias que estaban vacias
 
