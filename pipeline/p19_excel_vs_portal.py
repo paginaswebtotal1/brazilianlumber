@@ -25,8 +25,14 @@ from openpyxl import load_workbook
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:3000"
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 D = ROOT / "data"
-XLSX = pathlib.Path("C:/Users/USER/Desktop/BRAZILIAN LUMBER/ARQUITECTURA WEB BL/"
-                    "MENÙ VISUAL/10 - MAPA COMPLETO DE LA UNIFICACION.xlsx")
+_CARPETA = pathlib.Path("C:/Users/USER/Desktop/BRAZILIAN LUMBER/ARQUITECTURA WEB BL/"
+                        "MENÙ VISUAL")
+# Si el Excel estaba abierto al regenerarlo, p10 lo deja con sufijo (NUEVO). Se
+# contrasta el mas reciente de los dos: lo contrario seria dar por bueno un
+# fichero viejo y decir que el portal cuadra cuando no es el que se ha mirado.
+_CAND = [_CARPETA / "10 - MAPA COMPLETO DE LA UNIFICACION.xlsx",
+         _CARPETA / "10 - MAPA COMPLETO DE LA UNIFICACION (NUEVO).xlsx"]
+XLSX = max([x for x in _CAND if x.exists()], key=lambda x: x.stat().st_mtime)
 
 S = json.load(open(D / "site.json", encoding="utf-8"))
 COLL = ("categories", "products", "posts", "postcats", "pages")

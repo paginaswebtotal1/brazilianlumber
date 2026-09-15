@@ -134,6 +134,7 @@ import sys as _sys
 _sys.path.insert(0, str(Path(__file__).resolve().parent))
 from p2_classify import clasificar as _clasificar, especie as _especie, marca as _marca, medida as _medida
 from taxonomia import ARBOL as _ARBOL
+import woo as _woo
 
 
 def clasificar_suelta(url):
@@ -171,6 +172,45 @@ def clasificar_suelta(url):
     if "/product/" in u:
         return "DESCATALOGADO", "Ficha retirada de WordPress que Google sigue conociendo"
     return "REVISAR", "Google la conoce pero WordPress ya no la publica: decidir destino"
+
+
+# Taxonomias de archivo de WooCommerce, tal como aparecen en la URL.
+_TAX_ATRIBUTO = ("color", "colors", "color-options", "length", "board-length",
+                 "size", "package-size", "upc", "amount", "quantity", "count",
+                 "width", "thickness", "grade", "finish", "profile", "hardwood",
+                 "wood-type", "turboclip", "voc")
+
+
+def _por_archivo(url):
+    """Destino de un archivo de atributo o de etiqueta, con el dato de la tienda.
+
+    Aqui estaba el problema que salto con /product-tag/1x4/. El motor del
+    catalogo leia el ultimo segmento de la URL como si fuera un producto, no
+    reconocia "1x4" ni "slate-gray" ni "norx", y se los quedaba el cajon de
+    sastre: /accessories/. Asi acabaron 235 direcciones en una categoria que no
+    les correspondia, la mayoria sin ser accesorio de nada.
+
+    Un archivo de atributo no hay que adivinarlo: se sabe exactamente que
+    productos lo llevan. Si /color/slate-gray/ solo lo llevan tarimas de AZEK,
+    su sitio es AZEK. Si lo llevan tarimas y aceites a la vez, no hay una
+    categoria honesta y va al catalogo con filtros, que es lo que es.
+    """
+    partes = [x for x in url.split("?")[0].split("#")[0].strip("/").split("/") if x]
+    partes = [x for x in partes if not x.startswith("http") and "." not in x]
+    if len(partes) >= 2:
+        tax, termino = partes[-2], partes[-1]
+        # /length/12/page/3/ -> el termino sigue siendo 12
+        if tax == "page" and len(partes) >= 4:
+            tax, termino = partes[-4], partes[-3]
+        if tax in _TAX_ATRIBUTO:
+            r = _woo.ruta_termino(tax, termino)
+            if r:
+                return "https://brazilianlumber.com/" + r + "/"
+        if tax in ("product-tag", "tag"):
+            r = _woo.ruta_etiqueta(termino)
+            if r:
+                return "https://brazilianlumber.com/" + r + "/"
+    return ""
 
 
 def _por_slug(url):
@@ -212,6 +252,11 @@ def destino_suelta(url, accion, padre):
     ruta = re.sub(r"^https?://[^/]+", "", limpia)
     if not ruta or ruta == "/":
         return "https://brazilianlumber.com/"
+
+    # primero el dato de la tienda para archivos de atributo y etiqueta
+    d = _por_archivo(limpia)
+    if d:
+        return d
 
     for seg in reversed([x for x in ruta.strip("/").split("/") if x]):
         d = _por_slug(seg)
@@ -375,6 +420,20 @@ for x in universo.values():
         _movidas += 1
 
 print("filas reetiquetadas 'se mantiene pero cambia de URL':", _movidas)
+
+# "Se elimina" tiene que querer decir que no va a ninguna parte. Las categorias
+# promocionales (hot-deals, uncategorized) desaparecen como categoria, pero la
+# URL sigue recibiendo visitas y ahora si tiene adonde mandarlas: el catalogo.
+# Teniendo destino, la accion honesta es consolidar, no eliminar.
+_eliminadas = 0
+for x in universo.values():
+    if x["accion"] == "ELIMINAR" and x["destino"]:
+        x["accion"] = "CONSOLIDAR-301"
+        x["motivo"] = ("Categoria promocional que no sobrevive como tal; la URL "
+                       "se consolida en el catalogo")
+        _eliminadas += 1
+if _eliminadas:
+    print("categorias promocionales con destino, reetiquetadas:", _eliminadas)
 
 print("universo de URLs: {:,}  (rastreo {:,} + solo Search Console {:,})".format(
     len(universo), len(RAW), sueltas))
@@ -765,7 +824,8 @@ for r in sorted(desaparecen,
                 key=lambda x: -metricas(x["url_origen"]).get("clicks", 0)):
     m = metricas(r["url_origen"])
     o = r["url_origen"]
-    destino = absorb_por_origen.get(o) or (red_por_origen.get(o) or {}).get("to", "")
+    destino = (absorb_por_origen.get(o) or (red_por_origen.get(o) or {}).get("to", "")
+               or _por_archivo(o))
     ws.cell(f, 1, r["portal"])
     ws.cell(f, 2, r["tipo"])
     ws.cell(f, 3, o)

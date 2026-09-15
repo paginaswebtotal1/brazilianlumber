@@ -4,6 +4,7 @@ menu, breadcrumbs, relacionados, redirecciones y metadatos SEO.
 Salida: data/site.json
 """
 import json, re, hashlib
+import woo
 from pathlib import Path
 from collections import defaultdict, Counter
 from taxonomia import ARBOL, MAP, ESPECIE
@@ -938,6 +939,41 @@ def main():
     redirects = [{"from": r["url_origen"], "to": path_of(r["url_destino"]),
                   "portal": r["portal"], "type": r["tipo"]}
                  for r in raw if r["accion"] == "CONSOLIDAR-301" and r["url_destino"]]
+
+    # Archivos de etiqueta y de atributo que no sobreviven pero que tienen
+    # trafico. /product-tag/6x6-hardwood/ trae 123 clics al ano: dejarlos sin
+    # destino documentado es tirarlos. No se sabe adonde van leyendo el nombre,
+    # pero si mirando que productos llevan esa etiqueta: si todos son Ipe, el
+    # sitio de la etiqueta es Ipe. Ese dato sale de la propia tienda.
+    ya = {r["from"] for r in redirects}
+    n_arch = 0
+    for r in raw:
+        if r["accion"] not in ("NOINDEX", "ELIMINAR") or r["url_origen"] in ya:
+            continue
+        ruta_o = re.sub(r"^https?://[^/]+", "", r["url_origen"])
+        partes = [x for x in ruta_o.strip("/").split("/") if x]
+        if len(partes) < 2:
+            continue
+        tax, termino = partes[0], partes[1]
+        if tax in ("product-tag", "tag"):
+            ruta = woo.ruta_etiqueta(termino)
+        else:
+            ruta = woo.ruta_termino(tax, termino)
+        if ruta:
+            destino = "/" + ruta + "/"
+        elif tax in ("product-tag", "tag", "product-category") or woo.es_atributo(tax):
+            # La etiqueta existe y la llevan productos de ramas distintas:
+            # "ironwood" esta en tarima y en madera dimensional a la vez. No hay
+            # una categoria honesta, pero tampoco puede quedarse en nada: va al
+            # catalogo, que es literalmente lo que era ese archivo.
+            destino = "/shop/"
+        else:
+            continue
+        redirects.append({"from": r["url_origen"], "to": destino,
+                          "portal": r["portal"], "type": r["tipo"]})
+        n_arch += 1
+    if n_arch:
+        print("archivos de etiqueta y atributo con destino real: {}".format(n_arch))
 
     # Resolucion de cadenas. Una consolidacion puede apuntar a algo que a su vez
     # se consolido despues; sin esto queda un 301 hacia un 404, que es peor que

@@ -7,14 +7,14 @@ Generado por `pipeline/p4_export.py` el 2026-09-13.
 | Concepto | Cantidad |
 |---|---|
 | URLs rastreadas en los 3 portales | 2197 |
-| URLs finales del portal unico | 798 |
+| URLs finales del portal unico | 797 |
 | Categorias de producto | 50 |
-| Fichas de producto | 269 |
+| Fichas de producto | 268 |
 | Articulos del blog | 229 |
 | Categorias del blog | 70 |
 | Paginas | 180 |
-| De todas ellas, indexables | 730 |
-| Redirecciones 301 | 776 |
+| De todas ellas, indexables | 729 |
+| Redirecciones 301 | 1505 |
 | URLs antiguas a noindex (etiquetas) | 722 |
 | Fichas con contenido reescrito | 97 |
 
@@ -52,10 +52,10 @@ Nada de esto rompe el prototipo, pero conviene resolverlo antes de la migracion 
 - `/thank-you/` Thank you!
 - `/demo-home/` Demo Home
 
-**3. Fichas sin fotografia (0 de 269).** El prototipo las muestra con una portada generada por color de especie. Hay que subir la foto real antes de publicar.
+**3. Fichas sin fotografia (0 de 268).** El prototipo las muestra con una portada generada por color de especie. Hay que subir la foto real antes de publicar.
 
 
-**4. Paginas absorbidas por la taxonomia (105).** Ocupaban la misma URL que un nodo de categoria; su contenido se fusiono dentro de la categoria.
+**4. Paginas absorbidas por la taxonomia (106).** Ocupaban la misma URL que un nodo de categoria; su contenido se fusiono dentro de la categoria.
 
 - `/product/deckwise-stainless-steel-trim-head-screws-8x1-1-2-half-inches/` <- https://brazilianlumber.com/product/deckwise-stainless-steel-trim-head-screws-8x1-inches/
 - `/product/lowest-prices-deckwise-master-plug-kit/` <- https://brazilianlumber.com/product/deckwise-master-plug-kit/
@@ -66,6 +66,7 @@ Nada de esto rompe el prototipo, pero conviene resolverlo antes de la migracion 
 - `/product/phillip-lawn-artificial-turf/` <- https://brazilianlumber.com/product/louis-grawsy-artificial-turf/
 - `/product/berkshire-moss-artificial-ivy/` <- https://brazilianlumber.com/product/birkhall-artificial-ivy/
 - `/product/timbertech-pro-pvc-decking-terrain-collection/` <- https://brazilianlumber.com/product/timbertech-pro-pvc-decking-terrain-collection-1x6/
+- `/product/teca-castanho-8-x-12-x-0-3/` <- https://brazilianlumber.com/product/agar-castanho8-x-12-x-0-3/
 - `/product/origens-tauari-8-x-12-x-0-3/` <- https://brazilianlumber.com/product/jungle-duma-8-x-12-x-0-3/
 - `/product/origens-tauari-8-x-12-x-0-3/` <- https://brazilianlumber.com/product/origens-angelim-8-x-12-x-0-3/
 - `/product/origens-tauari-8-x-12-x-0-3/` <- https://brazilianlumber.com/product/origens-carvalho-8-x-12-x-0-3/

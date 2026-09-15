@@ -30,3 +30,6 @@ data/coherencia.json
 data/keywords_zonas.json
 data/zonas_renombradas.json
 data/excel_vs_portal.json
+
+__pycache__/
+*.pyc

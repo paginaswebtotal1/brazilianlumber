@@ -6,6 +6,7 @@ import json, re
 from pathlib import Path
 from taxonomia import ARBOL, MAP, ESPECIE
 from kb import ESPECIES, MARCAS, MEDIDAS
+import woo
 
 D = Path(__file__).resolve().parent.parent / "data"
 
@@ -140,11 +141,11 @@ TIPOS = [
     (r"\bivy\b", "landscaping/artificial-ivy"),
     # accesorios: lo especifico antes que lo general
     (r"cleaner|brightener|brighten|maintenance|wash", "accessories/maintenance"),
-    (r"drill|bit\b|cutter|arbor|\btool\b|saw\b|spacer|jig", "accessories/tools"),
+    (r"drill|bit\b|cutter|arbor|\btool\b|saw\b|spacer|jig|wrench|\bkey\b", "accessories/tools"),
     (r"\boil\b|sealer|seal\b|finish|stain|wisecoat|coating|glue|wax", "accessories/finishes-sealers"),
     (r"cable|railing|handrail|baluster|post[- ]?cap", "accessories/railing-cable"),
     (r"joist|pedestal|substructure|sleeper|grad\b|flashing|tape", "accessories/substructure"),
-    (r"fastener|screw|plug|clip|bolt|nail|bracket", "accessories/fasteners"),
+    (r"fastener|screw|plug|clip|bolt|nail|bracket|connector", "accessories/fasteners"),
 ]
 
 # 2. Subcategoria por marca DENTRO de un tipo, cuando el arbol la tiene.
@@ -173,63 +174,139 @@ DOMESTICAS = {"red-oak", "white-oak", "maple", "walnut", "sapele", "mahogany",
 BLANDAS = {"cedar", "cypress", "douglas-fir", "spruce", "pine", "redwood"}
 
 
-def clasificar(slug, titulo, texto, esp, mrc, med):
-    b = f"{slug} {titulo}".lower()
-
-    # (a) El mapa explicito de slugs de categoria antigua es la palabra del estudio.
-    if slug in MAP:
-        return MAP[slug]
-
-    # (b) El TIPO de producto manda sobre la marca.
+def _tipo(b, esp, mrc):
+    """Que ES el producto, leido de su propio nombre."""
     for rx, ruta in TIPOS:
         if not re.search(rx, b):
             continue
-        # ¿tiene el arbol una subcategoria para esta marca dentro de este tipo?
         if mrc and ruta in MARCA_EN_TIPO and mrc in MARCA_EN_TIPO[ruta]:
             return MARCA_EN_TIPO[ruta][mrc]
-        # revestimiento de madera maciza va al nodo de paneles
         if ruta == "cladding-siding" and esp:
             return "cladding-siding/wood-wall-panels"
         return ruta
+    return ""
 
-    # (c) Madera termotratada: la especie decide.
+
+def _subtipo_accesorio(b):
+    """Solo los patrones de accesorio, para afinar dentro de /accessories/."""
+    for rx, ruta in TIPOS:
+        if ruta.startswith("accessories/") and re.search(rx, b):
+            return ruta
+    return ""
+
+
+def _resto(b, esp, mrc, med):
+    """Lo que queda: termotratado, bambu, marca, PVC y especie."""
     if re.search(r"thermal|thermo|termo", b):
         for rx, ruta in TERMO:
             if re.search(rx, b):
                 return ruta
         return "decking/thermally-modified"
-
-    # (d) Bambu y PVC generico sin marca.
     if re.search(r"bamboo", b):
         return "decking/bamboo"
-
-    # (e) Ahora si, la marca.
     if mrc in MARCA_RUTA:
         return MARCA_RUTA[mrc]
     if mrc == "deckwise":
         return "accessories/fasteners"
     if mrc in ("grad", "wisewrap"):
         return "accessories/substructure"
-
-    # (f) PVC sin marca reconocida.
     if re.search(r"\bpvc\b", b):
         return "decking/pvc"
-
-    # (g) Especie. Una tropical en escuadria de estructura (2x, 4x, 6x) y sin
-    # "decking" en el nombre es madera dimensional, no tarima.
     if esp in ESPECIE:
-        if med and med.startswith(("2x", "4x", "6x", "8x")) and "deck" not in b:
-            return "lumber/tropical-hardwood"
         return ESPECIE[esp]
     if esp in DOMESTICAS:
         return "lumber/domestic-hardwood"
     if esp in BLANDAS:
         return "lumber/softwood"
+    if re.search(r"composite", b):
+        return "decking/composite"
     if re.search(r"deck", b):
         return "decking"
     if re.search(r"lumber|timber|board", b):
         return "lumber/tropical-hardwood"
-    return "accessories"
+    return ""
+
+
+def _dimensional(b, esp, med):
+    """Escuadria de estructura en madera tropical: es madera, no tarima.
+
+    Esto la tienda no puede decirlo: su arbol no tiene un nodo de madera
+    dimensional tropical, asi que mete un 4x4 de Ipe en "Ipe Wood" igual que
+    una tabla de 1x6. La distincion la hace la escuadria, y la da el nombre.
+    """
+    if esp in ESPECIE and med and med.startswith(("2x", "4x", "6x", "8x"))             and "deck" not in b:
+        return "lumber/tropical-hardwood"
+    return ""
+
+
+def clasificar(slug, titulo, texto, esp, mrc, med):
+    """Adonde va la ficha. Por turnos, de la fuente mas fiable a la menos.
+
+    Ninguna de las dos fuentes basta sola, y este es el motivo:
+
+      - El NOMBRE sabe que es una puerta, una lama, una baldosa o un tornillo,
+        y sabe la escuadria. La tienda no: mete un 4x4 de Ipe en "Ipe Wood".
+      - La TIENDA sabe lo que el nombre no dice. "Ciro Green" es cesped
+        artificial, "Diana Blush" un panel vegetal y "Origens Tauari" teto
+        vinilico, y ninguno de los tres lo dice su titulo. Sin ese dato los
+        once caian en /accessories/, que era el cajon de sastre de aqui abajo
+        y de donde salio la queja.
+
+    Lo que no se lleva la categoria principal no se pierde: va a cats_extra, y
+    el producto aparece en las dos ramas sin crear una segunda URL.
+    """
+    b = f"{slug} {titulo}".lower()
+    if slug in MAP:
+        return MAP[slug]
+
+    # "Artificial Grass" es una sola categoria en la tienda y dentro hay dos
+    # cosas distintas: rollos de cesped y paneles vegetales. Lo separa la ficha
+    # tecnica, que en un cesped habla de backing y en un panel de plant type.
+    t = (texto or "")[:600].lower()
+    if woo.ruta_producto(slug) == "landscaping":
+        if re.search(r"plant type|bougainvillea|ivy|foliage|boxwood", t + " " + b):
+            return "landscaping/artificial-ivy"
+        if re.search(r"backing|monofil|turf|grass|pile height", t + " " + b):
+            return "landscaping/artificial-turf"
+
+    tienda = woo.ruta_producto(slug)
+    tipo = _tipo(b, esp, mrc)
+
+    # La tienda manda cuando dice que es un accesorio y el nombre se ha dejado
+    # llevar por otra palabra: "deckwise-hidden-siding-fasteners-kit" no es
+    # revestimiento por llevar "siding" dentro.
+    # La tienda impone "accesorio" solo cuando el nombre lo confirma: dice que
+    # "deckwise-hidden-siding-fasteners-kit" no es revestimiento por llevar
+    # "siding" dentro. Pero tambien mete una baldosa de 24x24 en accesorios, y
+    # ahi la baldosa es baldosa: si el nombre no trae ninguna palabra de
+    # accesorio, manda el tipo.
+    if tienda.startswith("accessories") and not tipo.startswith("accessories"):
+        sub = _subtipo_accesorio(b)
+        if sub:
+            return sub
+        if not tipo:
+            return tienda
+    if tipo:
+        # si la tienda afina dentro del mismo tipo, se queda lo mas concreto
+        return tienda if tienda.startswith(tipo + "/") else tipo
+
+    dim = _dimensional(b, esp, med)
+    if dim:
+        return dim
+
+    # La marca es mas concreta que la rama generica de la tienda: Armadillo es
+    # PVC, pero el menu tiene nodo propio de Armadillo y la ficha tiene que
+    # salir ahi. La rama de la tienda se guarda como categoria secundaria.
+    if mrc in MARCA_RUTA and MARCA_RUTA[mrc] in ARBOL:
+        return MARCA_RUTA[mrc]
+
+    if tienda:
+        resto = _resto(b, esp, mrc, med)
+        if resto and resto.startswith(tienda + "/"):
+            return resto
+        return tienda
+
+    return _resto(b, esp, mrc, med)
 
 
 def secundarias(slug, titulo, principal, mrc):
@@ -242,11 +319,16 @@ def secundarias(slug, titulo, principal, mrc):
     """
     b = f"{slug} {titulo}".lower()
     extra = []
+    # la rama que dice la tienda, cuando no ha sido la que ha ganado
+    tienda = woo.ruta_producto(slug)
+    if tienda and tienda != principal and not principal.startswith(tienda + "/"):
+        extra.append(tienda)
     if re.search(r"\bpvc\b", b) and principal != "decking/pvc":
         extra.append("decking/pvc")
     if re.search(r"composite", b) and principal.startswith("fencing-gates"):
         extra.append("fencing-gates/composite")
-    return [e for e in dict.fromkeys(extra) if e != principal]
+    return [e for e in dict.fromkeys(extra)
+            if e != principal and e in ARBOL and not principal.startswith(e + "/")]
 
 
 def main():
