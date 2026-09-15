@@ -243,3 +243,16 @@ body {
   font-size: 15px;
   line-height: 1.6;
 }
+
+/* Enlace contextual por entidad. Se ve como enlace pero sin romper la lectura:
+   es texto del cuerpo que además lleva a la página que sirve ese término. */
+.prose-bl .link-entidad {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--color-bark-300, #c9b49a);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.prose-bl .link-entidad:hover {
+  text-decoration-color: currentColor;
+}

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Blocks, Breadcrumbs, JsonLd, ProductCard, Section, SpecTable } from "@/components/ui";
+import { Blocks, Breadcrumbs, JsonLd, ProductCard, Section, SpecTable, Related } from "@/components/ui";
 import Thumb from "@/components/Thumb";
 import { breadcrumbs, getDoc, related } from "@/lib/data";
 import { breadcrumbSchema, faqSchema, graph, metaFor, productSchema } from "@/lib/seo";
@@ -130,6 +130,8 @@ export default async function ProductPage({ params }: Params) {
           )}
         </div>
       </div>
+
+      <Related titulo="Ask about this board" items={doc.relatedPages ?? []} />
 
       {sisters.length > 0 && (
         <Section title="Related products" href={doc.category}>

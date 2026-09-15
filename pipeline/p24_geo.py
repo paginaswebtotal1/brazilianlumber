@@ -50,6 +50,7 @@ BRAND = "Brazilian Lumber"
 HOY = "2026-09-15"
 AUTOR = "the Brazilian Lumber technical team"
 
+SALTO = chr(10)
 P = lambda t: {"t": "p", "text": t}
 H2 = lambda t: {"t": "h2", "text": t}
 TABLA = lambda head, rows: {"t": "table", "head": head, "rows": rows}
@@ -351,6 +352,57 @@ def main():
 
             doc["blocks"] = bloques
 
+    # --- 7-bis: los sinonimos que nombra el correo, en la pagina que los sirve
+    #
+    # La auditoria contra el sitio en vivo encontro que 'exotic hardwood',
+    # 'exterior wood siding' y 'rainscreen' no aparecian en ninguna parte de su
+    # pagina destino. Felipe los escribe uno a uno en su correo y tienen volumen
+    # medido. No es relleno: son los nombres por los que se conoce eso mismo, y
+    # se escriben como tales, en una frase que dice la verdad.
+    SINONIMOS = {
+        "/decking/tropical-hardwood/": (
+            "The same boards are searched for as exotic hardwood, tropical hardwood decking "
+            "and exotic hardwood decking. They are all names for this group: dense South "
+            "American species that survive outdoors without chemical treatment. Ipe, Cumaru, "
+            "Jatoba, Garapa, Massaranduba, Tigerwood and Piquia all sit here, each with its "
+            "Janka hardness and expected service life published on its own page."),
+        "/cladding-siding/": (
+            "This is what the market also calls exterior wood siding, wood cladding and "
+            "rainscreen siding. The three describe the same job done three ways: a face board "
+            "over a ventilated cavity. Rainscreen refers to the detail, not the material, and "
+            "every profile here can be installed as one when the battens leave the cavity open."),
+        "/ceiling-soffit/": (
+            "Tongue and groove ceiling, wood ceiling planks and wood soffit are the three names "
+            "for the boards on this page. The profile is the same T&G milling; what changes is "
+            "where it goes. Soffit is the underside of an overhang and takes the most moisture, "
+            "so it is the one that decides the species."),
+    }
+    for coll in COLL:
+        for doc in site[coll]:
+            frase = SINONIMOS.get(doc["path"])
+            if not frase: continue
+            bloques = doc.get("blocks") or []
+            ya = DEM.norm(" ".join(b.get("text", "") for b in bloques if b.get("t") == "p"))
+            if DEM.norm(frase[:60]) in ya: continue
+            corte = 1 if doc.get("answerBlock") else 0
+            bloques.insert(corte + 1, H2("What else this is called"))
+            bloques.insert(corte + 2, P(frase))
+            doc["blocks"] = bloques
+            n["sinonimo del correo de Felipe"] += 1
+
+    # --- 7-ter: la rama de techos, que tiene 18.100 busquedas/mes y no es categoria
+    ceiling = next((d for d in site["pages"] if d["path"] == "/ceiling-soffit/"), None)
+    if ceiling and not ceiling.get("answerBlock"):
+        ceiling["answerBlock"] = (
+            "Tongue and groove ceiling boards are the T&G milled planks used for porch "
+            "ceilings, soffits and interior feature ceilings. Brazilian Lumber mills them in "
+            "Ipe, Cumaru, Garapa and Thermo Ayous, and stocks PVC and composite profiles for "
+            "wet locations, at its Miami, Los Angeles and New Jersey yards. Measured US demand "
+            "for tongue and groove ceiling is about 18,100 queries a month.")
+        ceiling["blocks"] = [P(ceiling["answerBlock"])] + (ceiling.get("blocks") or [])
+        ceiling["alsoKnownAs"] = ["Wood Ceiling Planks", "Wood Soffit", "T&G Ceiling"]
+        n["bloque de respuesta"] += 1
+
     # --- 8: llms.txt
     cats = [c for c in site["categories"] if (c.get("productCount") or 0) > 0]
     cats.sort(key=lambda c: -(FIN.get(c["path"], {}).get("vol_cluster") or 0))
@@ -387,8 +439,13 @@ def main():
           "- [Request a quote](/request-a-quote/)",
           "- [Request samples](/request-samples/)",
           "- [Contact](/brazilian-lumber-contact/)", ""]
-    PUB.mkdir(parents=True, exist_ok=True)
-    (PUB / "llms.txt").write_text("\n".join(L), encoding="utf-8")
+    # No se escribe en /public: un estatico se sirve sin pasar por la cabecera
+    # X-Robots-Tag y se quedaba fuera del bloqueo del prototipo. Va como dato que
+    # lee /llms.txt/route.ts, detras del mismo interruptor que robots.txt.
+    WEBDATA = ROOT / "web" / "src" / "data"
+    WEBDATA.mkdir(parents=True, exist_ok=True)
+    (WEBDATA / "llms.json").write_text(
+        json.dumps({"text": SALTO.join(L)}, ensure_ascii=False), encoding="utf-8")
     n["llms.txt"] = len(L)
 
     site["geo"] = {"aplicado": HOY, "cambios": dict(n)}

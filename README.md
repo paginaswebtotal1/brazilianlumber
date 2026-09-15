@@ -155,6 +155,48 @@ Va con la clase `answer-block`, que es a la que apunta `speakable` en el JSON-LD
 
 **Tres arreglos que hicieron falta antes.** Las cifras Janka no coincidían entre páginas (3.510 contra 3.680 para el mismo Ipe): un motor que lea las dos versiones descarta las dos, así que ahora hay un solo origen. **99 páginas afirmaban un `Class A fire rating` sin respaldo**, que es justo lo que Felipe advirtió por escrito; las 32 menciones activas ahora dicen que es un resultado ASTM E84 de la especie ensayada, no una certificación de un tablón concreto. Y `robots.txt` solo permitía cuatro robots de IA: ahora lista los catorce que importan, uno a uno, porque **si uno está bloqueado ese motor no puede citarnos** por bueno que sea el contenido.
 
+## Enlazado interno
+
+La auditoría contra el sitio construido encontró **115 páginas sin un solo enlace entrante**. No eran páginas menores: un artículo con 768 clics, la calculadora, la página de contacto y `/ceiling-soffit/`, que tiene 18.100 búsquedas/mes medidas. Google llegaba a ellas solo por el sitemap y la autoridad del dominio no les llegaba en absoluto.
+
+`p25_enlaces.py` lo arregla con cuatro mecanismos, todos a partir de datos que ya estaban:
+
+| Mecanismo | Enlaces |
+|---|---|
+| Enlace contextual por entidad: la primera mención de una especie, marca o categoría con página propia pasa a ser enlace | **2.465** |
+| Artículo enlazado a sus hermanos del mismo tema | 181 |
+| Ficha enlazada a contacto y presupuesto | 268 |
+| Guía enlazada a la categoría de la que habla | 104 |
+| Landing de mercado enlazada desde su categoría fuerte | 20 |
+| Páginas útiles añadidas a la navegación | 7 |
+| **Índice HTML reconstruido** (`/sitemap/` venía de WordPress en noindex, con un bloque de base64 y listas sin enlaces) | **729** |
+
+**Resultado medido: de 115 páginas huérfanas a 26, y ninguna de las 26 es indexable.** Son páginas de prueba y de utilidad que ya estaban en noindex a propósito.
+
+Los enlaces por entidad se guardan como datos (`refs: [{term, path}]`), no como HTML: el renderizador busca texto plano y enlaza la primera aparición, así que no hay forma de inyectar marcado desde el contenido.
+
+## Datos estructurados
+
+| Añadido | Por qué |
+|---|---|
+| `sku` en las 268 fichas | Un `Product` sin identificador no se consolida como entidad |
+| `AggregateOffer` en lugar de `Offer` | Un `Offer` sin `price` ni `priceSpecification` es inválido y sale como error en Search Console. Aquí el precio depende de medida, largo y flete: no hay un número que poner |
+| `LocalBusiness` de las **tres** sedes | La capa transaccional/local tiene el mejor CTR de las cinco (1,156 %) y sin esto un motor no sabe que hay un almacén físico detrás de una página de ciudad |
+| `telephone` en `Organization` | +1-877-606-3306, el que aparece 241 veces en el contenido de origen |
+| `knowsAbout` con 14 entidades | Resolución de entidad para los motores generativos |
+
+Las tres direcciones salen del contenido de los portales de origen, que las declara con todas las letras: *"We have warehouses and showrooms in Miami, FL; Los Angeles, CA; and North Brunswick, NJ"*.
+
+| Sede | Dirección | Teléfono |
+|---|---|---|
+| Miami | 777 NW 71st St, Miami, FL 33150 | (954) 287-0816 |
+| Los Ángeles | 4629 S Alameda St, Los Angeles, CA 90058 | (323) 990-7871 |
+| New Jersey | 593 Nassau St, North Brunswick Township, NJ 08902 | (908) 388-4434 |
+
+**No se declaran horarios.** El contenido solo dice *"generally open Monday through Friday, with Saturday hours at select locations"*, y un `openingHours` inventado es peor que ninguno.
+
+Queda una dirección sin identificar: **2800 N 29th Ave, Hollywood FL 33020**, que aparece junto a la de Miami en un bloque de contacto pero sin decir qué es. Si es una cuarta sede, hay que añadirla; si no, hay que quitarla del contenido.
+
 ## SEO y GEO
 
 Implementado y verificable, con el interruptor de indexación en **off**:

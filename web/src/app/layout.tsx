@@ -5,7 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { JsonLd } from "@/components/ui";
 import { nav, stats } from "@/lib/data";
-import { BRAND, ROBOTS, SITE_URL, graph, orgSchema } from "@/lib/seo";
+import { BRAND, ROBOTS, SITE_URL, graph, orgSchema, yardSchemas } from "@/lib/seo";
 
 /**
  * Las fuentes se autoalojan en el build (next/font). No hay petición a Google
@@ -71,7 +71,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               target: { "@type": "EntryPoint", urlTemplate: `${SITE_URL}/search/?q={search_term_string}` },
               "query-input": "required name=search_term_string",
             },
-          })}
+          },
+          ...yardSchemas())}
         />
       </body>
     </html>

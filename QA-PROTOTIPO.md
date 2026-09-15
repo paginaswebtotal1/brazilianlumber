@@ -13,7 +13,7 @@ Generado por `pipeline/p4_export.py` el 2026-09-14.
 | Articulos del blog | 229 |
 | Categorias del blog | 70 |
 | Paginas | 180 |
-| De todas ellas, indexables | 729 |
+| De todas ellas, indexables | 730 |
 | Redirecciones 301 | 1505 |
 | URLs antiguas a noindex (etiquetas) | 722 |
 | Fichas con contenido reescrito | 97 |

@@ -142,6 +142,8 @@ export function orgSchema(): Json {
       "Massaranduba", "Red Balau", "thermally modified wood", "composite decking",
       "PVC decking", "wood cladding", "rainscreen siding", "dimensional lumber",
     ],
+    telephone: "+1-877-606-3306",
+    email: "Sales@BrazilianLumber.com",
     areaServed: "US",
     location: [
       { "@type": "Place", name: "Miami yard", address: { "@type": "PostalAddress", addressLocality: "Miami", addressRegion: "FL", addressCountry: "US" } },
@@ -182,14 +184,65 @@ export function productSchema(doc: Doc): Json {
     brand: { "@type": "Brand", name: doc.attrs?.marca ? String(doc.attrs.marca) : BRAND },
     material: doc.attrs?.especie ? String(doc.attrs.especie).replace(/-/g, " ") : undefined,
     additionalProperty: props.length ? props : undefined,
+    sku: doc.slug,
+    // Un Offer sin `price` ni `priceSpecification` no es valido para Google y
+    // sale como error en Search Console. Aqui el precio depende de la medida,
+    // el largo y el flete, asi que no hay un numero que poner: se declara la
+    // disponibilidad y el vendedor con un AggregateOffer sin importe, que es
+    // lo que corresponde a un producto que se cotiza.
     offers: {
-      "@type": "Offer",
+      "@type": "AggregateOffer",
       availability: "https://schema.org/InStock",
       priceCurrency: "USD",
+      offerCount: 1,
       url: absolute(doc.path),
       seller: { "@id": `${SITE_URL}/#organization` },
+      businessFunction: "http://purl.org/goodrelations/v1#Sell",
     },
   };
+}
+
+/**
+ * Las tres sedes, con la direccion tal y como la declara el contenido de los
+ * portales de origen: "We have warehouses and showrooms in Miami, FL; Los
+ * Angeles, CA; and North Brunswick, NJ."
+ *
+ * Importa porque la capa transaccional/local es la que mejor CTR tiene de las
+ * cinco (1,156%), y sin LocalBusiness un motor no sabe que hay un patio fisico
+ * detras de una pagina de ciudad.
+ *
+ * No se declaran horarios: el contenido solo dice "generally open Monday
+ * through Friday, with Saturday hours at select locations", y un openingHours
+ * inventado es peor que ninguno.
+ */
+export function yardSchemas(): Json[] {
+  const base = (id: string, name: string, tel: string, street: string,
+                city: string, region: string, zip: string): Json => ({
+    "@type": "LocalBusiness",
+    "@id": `${SITE_URL}/#yard-${id}`,
+    name,
+    parentOrganization: { "@id": `${SITE_URL}/#organization` },
+    telephone: tel,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: street,
+      addressLocality: city,
+      addressRegion: region,
+      postalCode: zip,
+      addressCountry: "US",
+    },
+    priceRange: "$$",
+    email: "Sales@BrazilianLumber.com",
+    url: SITE_URL,
+  });
+  return [
+    base("miami", `${BRAND} — Miami warehouse and showroom`, "+1-954-287-0816",
+         "777 NW 71st St", "Miami", "FL", "33150"),
+    base("los-angeles", `${BRAND} — Los Angeles warehouse and showroom`, "+1-323-990-7871",
+         "4629 S Alameda St", "Los Angeles", "CA", "90058"),
+    base("new-jersey", `${BRAND} — New Jersey warehouse and showroom`, "+1-908-388-4434",
+         "593 Nassau St", "North Brunswick Township", "NJ", "08902"),
+  ];
 }
 
 export function articleSchema(doc: Doc): Json {

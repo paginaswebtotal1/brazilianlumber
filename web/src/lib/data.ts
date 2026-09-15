@@ -15,9 +15,17 @@ import site from "@/data/site.json";
  * saben de dónde viene el contenido.
  */
 
+/**
+ * `refs` son los enlaces contextuales que calcula p25_enlaces.py: el termino
+ * exacto tal y como aparece en el texto y la pagina que lo sirve. Se guardan
+ * como datos y no como HTML a proposito, para que el renderizador enlace
+ * buscando texto plano y nunca tenga que interpretar marcado.
+ */
+export type Ref = { term: string; path: string };
+
 export type Block =
-  | { t: "p" | "h2" | "h3" | "h4"; text: string }
-  | { t: "list"; items: string[] }
+  | { t: "p" | "h2" | "h3" | "h4"; text: string; refs?: Ref[] }
+  | { t: "list"; items: string[]; refs?: Ref[]; links?: string[] }
   | { t: "img"; src: string; w?: number; h?: number }
   | { t: "table"; head: string[]; rows: string[][] };
 
@@ -80,6 +88,11 @@ export interface Doc {
   queryHeadings?: string[];
   reviewed?: string;
   reviewedBy?: string;
+  // enlazado interno (p25_enlaces.py)
+  relatedCats?: string[];
+  relatedGuides?: { path: string; title: string }[];
+  relatedPages?: { path: string; title: string }[];
+  relatedPosts?: { path: string; title: string }[];
 }
 
 interface Site {

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, ArrowUpRight } from "lucide-react";
 import Thumb from "./Thumb";
-import type { Block, Doc } from "@/lib/data";
+import type { Block, Doc, Ref } from "@/lib/data";
 
 /** Migas de pan. Van en todas las páginas y alimentan el BreadcrumbList de schema.org. */
 export function Breadcrumbs({ items }: { items: { path: string; title: string }[] }) {
@@ -35,6 +35,41 @@ export function Breadcrumbs({ items }: { items: { path: string; title: string }[
  * clase `answer-block`, que es a la que apunta `speakable` en el JSON-LD: es
  * como se le dice a un motor generativo "si vas a citar algo, cita esto".
  */
+/**
+ * Enlaza la primera aparicion de cada termino, respetando el texto tal cual
+ * esta escrito. Trabaja sobre texto plano: no interpreta ni genera HTML, asi
+ * que no hay forma de inyectar marcado desde el contenido.
+ */
+function conEnlaces(texto: string, refs?: Ref[]): React.ReactNode {
+  if (!refs?.length) return texto;
+  let partes: React.ReactNode[] = [texto];
+  for (const r of refs) {
+    const siguiente: React.ReactNode[] = [];
+    let hecho = false;
+    for (const parte of partes) {
+      if (hecho || typeof parte !== "string") {
+        siguiente.push(parte);
+        continue;
+      }
+      const i = parte.toLowerCase().indexOf(r.term.toLowerCase());
+      if (i < 0) {
+        siguiente.push(parte);
+        continue;
+      }
+      hecho = true;
+      siguiente.push(
+        parte.slice(0, i),
+        <Link key={r.path + i} href={r.path} className="link-entidad">
+          {parte.slice(i, i + r.term.length)}
+        </Link>,
+        parte.slice(i + r.term.length),
+      );
+    }
+    partes = siguiente;
+  }
+  return partes.filter((x) => x !== "");
+}
+
 export function Blocks({ blocks, answer }: { blocks: Block[]; answer?: string }) {
   return (
     <div className="prose-bl">
@@ -88,7 +123,15 @@ export function Blocks({ blocks, answer }: { blocks: Block[]; answer?: string })
           return (
             <ul key={i}>
               {b.items.map((it, j) => (
-                <li key={j}>{it}</li>
+                <li key={j}>
+                  {b.links?.[j] ? (
+                    <Link href={b.links[j]} className="link-entidad">
+                      {it}
+                    </Link>
+                  ) : (
+                    conEnlaces(it, j === 0 ? b.refs : undefined)
+                  )}
+                </li>
               ))}
             </ul>
           );
@@ -99,13 +142,47 @@ export function Blocks({ blocks, answer }: { blocks: Block[]; answer?: string })
         if (answer && b.text === answer) {
           return (
             <p key={i} className="answer-block">
-              {b.text}
+              {conEnlaces(b.text, b.refs)}
             </p>
           );
         }
-        return <p key={i}>{b.text}</p>;
+        return <p key={i}>{conEnlaces(b.text, b.refs)}</p>;
       })}
     </div>
+  );
+}
+
+/**
+ * Bloque de paginas relacionadas.
+ *
+ * Existe por un motivo medido: la auditoria encontro 115 paginas sin un solo
+ * enlace entrante, entre ellas un articulo con 768 clics y /ceiling-soffit/,
+ * que tiene 18.100 busquedas/mes. Google llegaba a ellas solo por el sitemap.
+ */
+export function Related({
+  titulo,
+  items,
+}: {
+  titulo: string;
+  items: { path: string; title: string }[];
+}) {
+  if (!items.length) return null;
+  return (
+    <nav aria-label={titulo} className="mt-10 rounded-[--radius-card] border border-bark-200 bg-bark-50/60 p-5">
+      <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-bark-500">
+        {titulo}
+      </h2>
+      <ul className="flex flex-wrap gap-x-5 gap-y-2">
+        {items.map((it) => (
+          <li key={it.path}>
+            <Link href={it.path} className="inline-flex items-center gap-1 text-[14px] text-bark-800 underline decoration-bark-300 underline-offset-[3px] hover:decoration-current">
+              {it.title}
+              <ArrowUpRight className="size-3.5 opacity-60" aria-hidden />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 

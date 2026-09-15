@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Blocks, Breadcrumbs, JsonLd, PostCard, Section } from "@/components/ui";
+import { Blocks, Breadcrumbs, JsonLd, PostCard, Related, Section } from "@/components/ui";
 import Thumb from "@/components/Thumb";
 import { breadcrumbs, getDoc, postsIn, related } from "@/lib/data";
 import { articleSchema, breadcrumbSchema, collectionSchema, graph, metaFor } from "@/lib/seo";
@@ -45,6 +45,14 @@ export default async function GuidePage({ params }: Params) {
           </h1>
           <div className="mt-4">
             <Blocks blocks={doc.blocks} answer={doc.answerBlock} />
+          <Related
+            titulo="In the catalog"
+            items={(doc.relatedCats ?? [])
+              .map((p) => getDoc(p))
+              .filter(Boolean)
+              .map((c) => ({ path: c!.path, title: c!.title }))}
+          />
+          <Related titulo="More on this topic" items={doc.relatedPosts ?? []} />
           </div>
         </header>
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

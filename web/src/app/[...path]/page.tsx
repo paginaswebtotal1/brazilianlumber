@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Blocks, Breadcrumbs, CategoryRow, JsonLd, ProductCard, Section } from "@/components/ui";
+import { Blocks, Breadcrumbs, CategoryRow, JsonLd, ProductCard, Related, Section } from "@/components/ui";
 import Thumb from "@/components/Thumb";
 import {
   breadcrumbs,
@@ -12,7 +12,7 @@ import {
   productsIn,
   related,
 } from "@/lib/data";
-import { breadcrumbSchema, collectionSchema, faqSchema, graph, metaFor } from "@/lib/seo";
+import { absolute, breadcrumbSchema, collectionSchema, descriptionFor, faqSchema, graph, metaFor } from "@/lib/seo";
 
 /**
  * Ruta comodín: resuelve las categorías de producto (rutas jerárquicas de hasta
@@ -68,6 +68,19 @@ export default async function CatchAll({ params }: Params) {
             </h1>
             <div className="mt-4">
               <Blocks blocks={doc.blocks} answer={doc.answerBlock} />
+          <Related
+            titulo="Related pages"
+            items={[
+              ...(doc.relatedCats ?? [])
+                .map((p) => getDoc(p))
+                .filter(Boolean)
+                .map((c) => ({ path: c!.path, title: c!.title })),
+              ...(doc.relatedGuides ?? []),
+              ...(doc.relatedPages ?? []),
+            ]}
+          />
+              <Related titulo="Guides on this material" items={doc.relatedGuides ?? []} />
+              <Related titulo="By market" items={doc.relatedPages ?? []} />
             </div>
           </div>
           {doc.image && (
@@ -188,12 +201,22 @@ export default async function CatchAll({ params }: Params) {
       <JsonLd
         data={graph(
           {
+            // Una pagina normal tambien es una entidad: /batu/ ES Philippine
+            // mahogany para el mercado, y si el JSON-LD no lo dice, un motor
+            // que recibe esa pregunta no sabe que esta pagina la contesta.
             "@type": "WebPage",
             name: doc.title,
-            description: doc.description,
-            url: doc.path,
+            alternateName: doc.alsoKnownAs?.length ? doc.alsoKnownAs : undefined,
+            description: descriptionFor(doc),
+            url: absolute(doc.path),
+            dateModified: doc.reviewed || doc.modified || undefined,
+            abstract: doc.answerBlock || undefined,
+            speakable: doc.answerBlock
+              ? { "@type": "SpeakableSpecification", cssSelector: [".answer-block", "h1"] }
+              : undefined,
           },
           breadcrumbSchema(crumbs),
+          ...(doc.faq?.length ? [faqSchema(doc.faq)] : []),
         )}
       />
     </div>
